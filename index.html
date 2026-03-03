@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JOBZ.BAR</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════
+   TOKENS
+═══════════════════════════════ */
+:root{
+  --black:#0a0a0a; --gold:#FFB800; --copper:#B87333;
+  --parch:#F0EED8; --red:#ff003c; --green:#39ff14;
+  --cyan:#00e5ff; --vip:#C8A96E; --male:#4A9EFF;
+  --female:#FF6EB4; --other:#F0EED8;
+  --glow:0 0 24px rgba(255,184,0,0.45),0 0 60px rgba(255,184,0,0.12);
+  --nav-h:52px; --bar-h:48px;
+}
+
+/* ═══════════════════════════════
+   RESET
+═══════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{width:100%;height:100%;background:var(--black);}
+body{width:100%;height:100%;font-family:'Share Tech Mono',monospace;color:var(--parch);
+  font-size:16px;background:var(--black);overflow:hidden;-webkit-tap-highlight-color:transparent;}
+button{font-family:'Share Tech Mono',monospace;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+input,select,textarea{font-family:'Share Tech Mono',monospace;}
+input:focus,select:focus,textarea:focus{outline:none;}
+/* Prevent zoom on input focus iOS */
+input,select,textarea{font-size:16px;}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);
+  pointer-events:none;z-index:2000;}
+
+/* Custom cursor — desktop only */
+.cur-dot,.cur-ring{display:none;}
+@media(pointer:fine){
+  body{cursor:none;}
+  button,a,input,select,textarea{cursor:none;}
+  .cur-dot{display:block;width:8px;height:8px;background:var(--gold);position:fixed;top:0;left:0;
+    pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 8px var(--gold);}
+  .cur-ring{display:block;width:30px;height:30px;border:1.5px solid rgba(255,184,0,0.4);position:fixed;top:0;left:0;
+    pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all 0.15s;}
+}
+
+/* ═══════════════════════════════
+   SCREEN SYSTEM
+═══════════════════════════════ */
+.screen{position:fixed;inset:0;opacity:0;pointer-events:none;
+  transition:opacity 0.4s ease;overflow:hidden;}
+.screen.active{opacity:1;pointer-events:all;}
+
+/* ═══════════════════════════════
+   TOP NAV
+═══════════════════════════════ */
+#topNav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);
+  background:rgba(10,10,10,0.97);border-bottom:1px solid rgba(255,184,0,0.1);
+  display:flex;align-items:center;padding:0 16px;gap:12px;z-index:300;
+  opacity:0;pointer-events:none;transition:opacity 0.5s;}
+#topNav.show{opacity:1;pointer-events:all;}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:5px;color:var(--gold);flex-shrink:0;}
+.nav-badge{font-size:0.65rem;letter-spacing:1.5px;border:1px solid rgba(255,184,0,0.3);
+  color:var(--gold);padding:3px 8px;flex-shrink:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:130px;}
+.nav-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-shrink:0;}
+.nav-tab{font-size:0.8rem;letter-spacing:2px;color:rgba(255,184,0,0.35);
+  padding:6px 10px;border-bottom:2px solid transparent;transition:all 0.25s;white-space:nowrap;}
+.nav-tab.active,.nav-tab:hover{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-online{font-size:0.72rem;letter-spacing:1px;color:rgba(255,184,0,0.25);}
+.nav-online span{color:var(--gold);}
+.blink{animation:blink 1.2s steps(1) infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@media(max-width:480px){
+  .nav-online{display:none;}
+  .nav-badge{max-width:90px;font-size:0.6rem;}
+}
+
+/* ═══════════════════════════════
+   BOTTLE BAR
+═══════════════════════════════ */
+#bottleBar{position:fixed;bottom:0;left:0;right:0;height:var(--bar-h);
+  background:rgba(10,10,10,0.97);border-top:1px solid rgba(255,184,0,0.09);
+  display:flex;align-items:center;padding:0 14px;gap:10px;z-index:300;
+  opacity:0;pointer-events:none;transition:opacity 0.5s;}
+#bottleBar.show{opacity:1;pointer-events:all;}
+.bb-icon{flex-shrink:0;opacity:0.22;}
+.bb-track{flex:1;height:5px;border:1px solid rgba(255,184,0,0.15);overflow:hidden;min-width:0;}
+.bb-fill{height:100%;background:linear-gradient(90deg,var(--copper),var(--gold));
+  transition:width 0.9s ease;position:relative;overflow:hidden;}
+.bb-fill::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+  animation:shimmer 2.5s infinite;}
+@keyframes shimmer{0%{transform:translateX(-200%)}100%{transform:translateX(200%)}}
+.bb-label{font-size:0.72rem;letter-spacing:1.5px;color:rgba(255,184,0,0.28);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:180px;}
+.bb-pct{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--gold);flex-shrink:0;}
+@media(max-width:480px){.bb-label{display:none;}}
+
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:rgba(10,10,10,0.97);border:1px solid rgba(255,184,0,0.22);
+  color:var(--gold);font-size:0.82rem;letter-spacing:1.5px;
+  padding:10px 18px;z-index:5000;opacity:0;transition:all 0.3s;
+  pointer-events:none;
+  /* FIXED: wrap on mobile */
+  white-space:normal;max-width:90vw;text-align:center;line-height:1.5;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ═══════════════════════════════
+   MODALS
+═══════════════════════════════ */
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:700;
+  display:none;align-items:flex-start;justify-content:center;
+  padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal-wrap.open{display:flex;}
+.modal-box{width:100%;max-width:520px;background:#0f0f0f;
+  border:1px solid rgba(255,184,0,0.22);padding:24px 20px;position:relative;
+  animation:modalIn 0.3s ease;margin:auto;}
+.modal-box::-webkit-scrollbar{width:4px;}
+.modal-box::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.15);}
+@keyframes modalIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.modal-close{position:absolute;top:12px;right:14px;background:transparent;border:none;
+  color:rgba(255,184,0,0.35);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;padding:4px 8px;}
+.modal-eyebrow{font-size:0.68rem;letter-spacing:4px;color:rgba(255,184,0,0.28);margin-bottom:6px;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:7px;
+  color:var(--gold);margin-bottom:4px;}
+.modal-sub{font-size:0.8rem;letter-spacing:1.5px;color:rgba(255,184,0,0.3);margin-bottom:20px;}
+
+/* Shared btns */
+.btn-gold{background:var(--gold);border:none;color:var(--black);
+  font-family:'Share Tech Mono',monospace;font-size:0.9rem;letter-spacing:2px;
+  padding:13px 24px;font-weight:700;transition:all 0.25s;width:100%;}
+.btn-gold:active{background:#ffd055;transform:scale(0.98);}
+.btn-outline{background:transparent;border:1px solid rgba(255,184,0,0.22);
+  color:rgba(255,184,0,0.55);font-size:0.9rem;letter-spacing:2px;
+  padding:11px 24px;transition:all 0.3s;width:100%;}
+.btn-outline:active{border-color:var(--gold);color:var(--gold);}
+
+/* ═══════════════════════════════
+   S1 — SPLASH
+═══════════════════════════════ */
+#s1{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;position:relative;}
+.s1-boot{margin-bottom:28px;width:100%;max-width:520px;}
+.s1-boot-line{font-size:0.8rem;letter-spacing:1.5px;color:rgba(255,184,0,0.4);
+  margin-bottom:5px;opacity:0;transform:translateX(-6px);transition:all 0.4s ease;}
+.s1-boot-line.show{opacity:1;transform:translateX(0);}
+.s1-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.5rem,14vw,7rem);
+  letter-spacing:clamp(8px,3vw,16px);color:var(--gold);text-shadow:var(--glow);
+  animation:logoGlitch 6s infinite;line-height:1;text-align:center;}
+@keyframes logoGlitch{
+  0%,90%,100%{text-shadow:var(--glow);}
+  91%{clip-path:inset(30% 0 40% 0);transform:translateX(-4px);text-shadow:2px 0 var(--red),-2px 0 var(--cyan);}
+  92%{clip-path:inset(60% 0 10% 0);transform:translateX(4px);}
+  93%{clip-path:none;transform:translateX(0);}
+  95%{text-shadow:3px 0 var(--red),-3px 0 var(--cyan);}
+  96%{text-shadow:var(--glow);}
+}
+.s1-tagline{font-size:0.78rem;letter-spacing:4px;color:rgba(255,184,0,0.35);
+  margin-top:8px;margin-bottom:32px;text-align:center;}
+.s1-enter-btn{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:8px;
+  background:transparent;border:1px solid rgba(255,184,0,0.3);color:var(--gold);
+  padding:14px 48px;animation:enterPulse 2.5s ease-in-out infinite;}
+.s1-enter-btn:active{background:rgba(255,184,0,0.06);animation:none;}
+@keyframes enterPulse{
+  0%,100%{border-color:rgba(255,184,0,0.2);box-shadow:none;}
+  50%{border-color:rgba(255,184,0,0.5);box-shadow:0 0 20px rgba(255,184,0,0.12);}
+}
+.s1-opener{position:absolute;bottom:64px;right:20px;width:32px;height:48px;
+  opacity:0.08;transition:opacity 0.4s;}
+.s1-opener:active{opacity:0.9;}
+@media(pointer:fine){.s1-opener:hover{opacity:0.85;}}
+.s1-opener-nudge{position:absolute;bottom:118px;right:16px;font-size:0.65rem;
+  letter-spacing:1.5px;color:rgba(255,184,0,0.18);writing-mode:vertical-rl;
+  animation:nudge 3s ease-in-out infinite;pointer-events:none;}
+@keyframes nudge{0%,100%{opacity:0.18}50%{opacity:0.45}}
+
+/* ═══════════════════════════════
+   S2 — AUTH
+═══════════════════════════════ */
+#s2{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;overflow-y:auto;padding-bottom:calc(var(--bar-h) + 12px);}
+.s2-header{text-align:center;margin-bottom:24px;}
+.s2-eyebrow{font-size:0.68rem;letter-spacing:4px;color:rgba(255,184,0,0.28);margin-bottom:8px;}
+.s2-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:7px;color:var(--gold);}
+.s2-sub{font-size:0.8rem;letter-spacing:1.5px;color:rgba(255,184,0,0.3);margin-top:4px;}
+.s2-panel{width:100%;max-width:400px;}
+.s2-country-row{display:flex;gap:8px;margin-bottom:12px;}
+.s2-country-sel{background:rgba(255,184,0,0.03);border:1px solid rgba(255,184,0,0.18);
+  color:var(--gold);font-size:0.9rem;padding:10px 12px;flex-shrink:0;
+  -webkit-appearance:none;max-width:140px;}
+.s2-country-sel option{background:#0f0f0f;}
+/* FIXED: dial fits on mobile */
+.s2-dial{display:flex;gap:3px;margin-bottom:16px;justify-content:center;flex-wrap:nowrap;}
+.s2-digit{flex:1;max-width:34px;min-width:24px;height:44px;
+  border:1px solid rgba(255,184,0,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:1.3rem;
+  color:rgba(255,184,0,0.2);transition:all 0.2s;}
+.s2-digit.filled{color:var(--gold);border-color:rgba(255,184,0,0.4);background:rgba(255,184,0,0.03);}
+.s2-digit.active{border-color:var(--gold);box-shadow:0 0 10px rgba(255,184,0,0.2);}
+.s2-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.s2-key{background:rgba(255,184,0,0.02);border:1px solid rgba(255,184,0,0.1);
+  padding:14px 8px;text-align:center;transition:all 0.15s;min-height:54px;}
+.s2-key:active{background:rgba(255,184,0,0.1);border-color:rgba(255,184,0,0.3);}
+.s2-key-num{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--gold);line-height:1;}
+.s2-key-sub{font-size:0.52rem;letter-spacing:2px;color:rgba(255,184,0,0.25);margin-top:2px;}
+.s2-key-del .s2-key-num{font-size:1rem;color:rgba(255,184,0,0.4);}
+.s2-send-btn{width:100%;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;
+  letter-spacing:5px;background:transparent;border:1px solid rgba(255,184,0,0.2);
+  color:rgba(255,184,0,0.4);transition:all 0.3s;margin-bottom:10px;}
+.s2-send-btn.ready{border-color:var(--gold);color:var(--gold);}
+.s2-otp-panel{display:none;}
+.s2-otp-panel.show{display:block;}
+.s2-otp-label{font-size:0.78rem;letter-spacing:2px;color:rgba(255,184,0,0.3);
+  text-align:center;margin-bottom:12px;}
+.s2-otp-row{display:flex;gap:8px;justify-content:center;margin-bottom:14px;}
+.s2-otp-digit{width:44px;height:54px;border:1px solid rgba(255,184,0,0.2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:1.6rem;
+  color:rgba(255,184,0,0.2);transition:all 0.25s;}
+.s2-otp-digit.filled{color:var(--gold);border-color:rgba(255,184,0,0.5);}
+.s2-otp-digit.glitch{animation:otpGlitch 0.1s steps(1) 4;}
+@keyframes otpGlitch{0%{color:var(--red)}50%{color:var(--cyan)}100%{color:var(--gold)}}
+.s2-verify-btn{width:100%;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;
+  letter-spacing:5px;background:var(--gold);border:none;color:var(--black);font-weight:700;}
+
+/* ═══════════════════════════════
+   S3 — MISSION
+═══════════════════════════════ */
+#s3{padding-bottom:var(--bar-h);}
+.s3-inner{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 16px 16px;}
+.s3-inner::-webkit-scrollbar{width:3px;}
+.s3-inner::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.12);}
+.s3-eyebrow{font-size:0.68rem;letter-spacing:3px;color:rgba(255,184,0,0.28);margin-bottom:8px;}
+.s3-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.6rem,6vw,2.2rem);
+  letter-spacing:7px;color:var(--gold);margin-bottom:6px;}
+.s3-sub{font-size:0.85rem;letter-spacing:1px;color:rgba(255,184,0,0.4);margin-bottom:18px;}
+.s3-prog{height:3px;background:rgba(255,184,0,0.08);margin-bottom:20px;}
+.s3-prog-fill{height:100%;background:var(--gold);transition:width 0.4s ease;}
+/* FIXED: 1-col on mobile, 2-col on larger */
+.s3-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:20px;}
+@media(min-width:540px){.s3-grid{grid-template-columns:repeat(2,1fr);}}
+.s3-card{border:1px solid rgba(255,184,0,0.09);padding:20px 16px;
+  background:rgba(255,184,0,0.008);text-align:left;
+  transition:all 0.3s;position:relative;overflow:hidden;}
+.s3-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+  background:var(--gold);transform:scaleY(0);transform-origin:bottom;transition:transform 0.35s;}
+.s3-card.selected{border-color:rgba(255,184,0,0.4);background:rgba(255,184,0,0.03);}
+.s3-card.selected::before{transform:scaleY(1);}
+.s3-card-icon{width:32px;height:32px;border:1px solid rgba(255,184,0,0.2);
+  display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.s3-card-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:4px;
+  color:var(--gold);margin-bottom:5px;}
+.s3-card-desc{font-size:0.82rem;letter-spacing:0.5px;color:rgba(255,184,0,0.4);line-height:1.7;}
+.s3-sel-dot{position:absolute;top:12px;right:12px;width:10px;height:10px;
+  border:1px solid rgba(255,184,0,0.2);transition:all 0.3s;}
+.s3-card.selected .s3-sel-dot{background:var(--gold);border-color:var(--gold);}
+.s3-confirm-btn{width:100%;background:transparent;border:1px solid rgba(255,184,0,0.2);
+  color:rgba(255,184,0,0.35);font-family:'Bebas Neue',sans-serif;
+  font-size:1.1rem;letter-spacing:5px;padding:15px;transition:all 0.35s;}
+.s3-confirm-btn.ready{border-color:var(--gold);color:var(--gold);}
+
+/* ═══════════════════════════════
+   S4 — PERSONA
+═══════════════════════════════ */
+/* FIXED: no floating sidebar on mobile */
+#s4{padding-bottom:var(--bar-h);}
+.s4-inner{height:100%;overflow:hidden;position:relative;}
+.s4-q{display:none;flex-direction:column;position:absolute;inset:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:24px 20px 20px;}
+.s4-q::-webkit-scrollbar{width:3px;}
+.s4-q::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+.s4-q.active{display:flex;}
+.s4-q-number{font-size:0.68rem;letter-spacing:3px;color:rgba(255,184,0,0.22);margin-bottom:10px;}
+.s4-q-prog{width:100%;height:2px;background:rgba(255,184,0,0.07);margin-bottom:22px;}
+.s4-q-prog-fill{height:100%;background:var(--gold);transition:width 0.5s ease;}
+.s4-q-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.3rem,4.5vw,2rem);
+  letter-spacing:4px;color:var(--gold);line-height:1.2;margin-bottom:20px;}
+/* dossier: inline on large screens, hidden on mobile */
+.s4-dossier-inline{border:1px solid rgba(255,184,0,0.08);padding:10px 14px;
+  margin-bottom:16px;background:rgba(255,184,0,0.01);display:none;}
+.s4-dossier-inline.show{display:block;}
+@media(min-width:768px){.s4-dossier-inline{display:none !important;}}
+.s4-dossier-lbl{font-size:0.65rem;letter-spacing:3px;color:rgba(255,184,0,0.2);margin-bottom:8px;}
+.s4-dossier-item{font-size:0.72rem;letter-spacing:1.5px;color:rgba(255,184,0,0.35);
+  margin-bottom:4px;padding-left:8px;border-left:1px solid rgba(255,184,0,0.1);}
+/* desktop dossier — right floating panel */
+.s4-dossier-side{position:fixed;right:24px;top:50%;transform:translateY(-50%);
+  max-width:160px;display:none;}
+@media(min-width:900px){.s4-dossier-side.show{display:block;}}
+.s4-opts{display:flex;flex-direction:column;gap:7px;max-width:560px;}
+.s4-opt{display:flex;align-items:center;gap:12px;border:1px solid rgba(255,184,0,0.09);
+  padding:12px 14px;background:transparent;color:rgba(255,184,0,0.5);
+  font-size:0.88rem;letter-spacing:1.5px;transition:all 0.25s;text-align:left;
+  position:relative;}
+.s4-opt::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--gold);transform:scaleY(0);transition:transform 0.25s;}
+.s4-opt:active,.s4-opt.selected{border-color:rgba(255,184,0,0.4);
+  color:var(--gold);background:rgba(255,184,0,0.03);}
+.s4-opt.selected::before{transform:scaleY(1);}
+.s4-opt-key{font-size:0.68rem;letter-spacing:2px;color:rgba(255,184,0,0.2);min-width:18px;}
+.s4-opt.selected .s4-opt-key{color:var(--gold);}
+.s4-text-inp{background:transparent;border:none;border-bottom:1px solid rgba(255,184,0,0.2);
+  color:var(--parch);font-family:'Share Tech Mono',monospace;font-size:1rem;
+  letter-spacing:1.5px;padding:10px 4px;width:100%;max-width:380px;margin-bottom:16px;}
+.s4-text-inp:focus{border-bottom-color:var(--gold);}
+.s4-text-inp::placeholder{color:rgba(255,184,0,0.18);}
+.s4-dob-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.s4-dob-part{background:transparent;border:none;border-bottom:1px solid rgba(255,184,0,0.2);
+  color:var(--gold);font-family:'Bebas Neue',sans-serif;
+  font-size:1.5rem;letter-spacing:2px;padding:8px 4px;text-align:center;}
+.s4-dob-sep{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;
+  color:rgba(255,184,0,0.3);align-self:flex-end;padding-bottom:6px;}
+.s4-next-btn{margin-top:18px;background:transparent;border:1px solid rgba(255,184,0,0.2);
+  color:rgba(255,184,0,0.35);font-family:'Bebas Neue',sans-serif;
+  font-size:1.1rem;letter-spacing:5px;padding:12px 28px;transition:all 0.3s;align-self:flex-start;}
+.s4-next-btn.ready{border-color:var(--gold);color:var(--gold);}
+/* age block overlay */
+.s4-age-block{position:fixed;inset:0;background:rgba(255,0,60,0.1);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:600;padding:24px;text-align:center;}
+.s4-age-block.show{display:flex;animation:redShake 0.4s ease;}
+@keyframes redShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-2deg)}60%{transform:rotate(2deg)}80%{transform:rotate(-1deg)}}
+
+/* ═══════════════════════════════
+   S5 — CODENAME + SUBSCRIPTION
+═══════════════════════════════ */
+/* FIXED: proper padding for bar */
+#s5{padding-bottom:var(--bar-h);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#s5::-webkit-scrollbar{width:3px;}
+#s5::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+.s5-phase{display:none;padding:24px 18px;}
+.s5-phase.active{display:block;}
+.s5-hdg{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.6rem,5vw,2.2rem);
+  letter-spacing:7px;color:var(--gold);margin-bottom:6px;}
+.s5-sub-txt{font-size:0.85rem;letter-spacing:1.5px;color:rgba(255,184,0,0.35);margin-bottom:18px;}
+.s5-codename-display{font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(1.4rem,5vw,2.8rem);letter-spacing:6px;color:var(--gold);
+  text-shadow:var(--glow);margin:16px 0 12px;word-break:break-all;
+  animation:codeIn 0.5s ease;}
+@keyframes codeIn{from{filter:blur(8px);opacity:0}to{filter:blur(0);opacity:1}}
+.s5-codename-edit{background:transparent;border:none;
+  border-bottom:2px solid rgba(255,184,0,0.3);
+  color:var(--gold);font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(1.3rem,4vw,2rem);letter-spacing:5px;
+  padding:8px 4px;width:100%;max-width:100%;text-transform:uppercase;margin-bottom:16px;}
+.s5-codename-edit:focus{border-bottom-color:var(--gold);}
+.s5-dossier-card{border:1px solid rgba(255,184,0,0.1);
+  background:rgba(255,184,0,0.01);padding:14px 16px;margin-bottom:18px;}
+.s5-dossier-row{display:flex;gap:12px;padding:5px 0;
+  border-bottom:1px solid rgba(255,184,0,0.04);font-size:0.82rem;letter-spacing:1px;}
+.s5-dossier-key{color:rgba(255,184,0,0.25);min-width:90px;flex-shrink:0;}
+.s5-dossier-val{color:rgba(255,184,0,0.6);word-break:break-word;}
+.s5-lock-btn{width:100%;background:var(--gold);border:none;color:var(--black);
+  font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:5px;
+  padding:15px;font-weight:700;transition:all 0.25s;}
+.s5-lock-btn:active{background:#ffd055;}
+/* TIERS: 2-col on tablet, 1-col on phone */
+.s5-tiers-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:20px;}
+@media(min-width:500px){.s5-tiers-grid{grid-template-columns:repeat(2,1fr);}}
+.s5-tier-card{border:1px solid rgba(255,184,0,0.1);padding:18px 16px;
+  background:rgba(255,184,0,0.008);transition:all 0.3s;position:relative;cursor:pointer;}
+.s5-tier-card:active{border-color:rgba(255,184,0,0.35);}
+.s5-tier-card.selected{border-color:rgba(255,184,0,0.5);background:rgba(255,184,0,0.04);}
+.s5-tier-card.vip-card{border-color:rgba(200,169,110,0.2);}
+@media(min-width:500px){.s5-tier-card.vip-card{grid-column:1/-1;}}
+.s5-vip-badge{position:absolute;top:0;right:0;background:var(--vip);
+  color:var(--black);font-size:0.65rem;letter-spacing:1.5px;padding:4px 12px;font-weight:700;}
+.s5-tier-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:3px;
+  color:rgba(255,184,0,0.5);margin-bottom:3px;}
+.s5-tier-price{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;
+  letter-spacing:2px;color:var(--gold);line-height:1;}
+.s5-tier-freq{font-size:0.65rem;letter-spacing:2px;color:rgba(255,184,0,0.28);margin-bottom:8px;}
+.s5-tier-desc{font-size:0.8rem;letter-spacing:0.5px;color:rgba(255,184,0,0.45);line-height:1.7;}
+.s5-vip-highlight{margin-top:8px;border:1px solid rgba(200,169,110,0.25);
+  background:rgba(200,169,110,0.06);padding:9px 12px;
+  font-size:0.8rem;letter-spacing:1px;color:var(--vip);line-height:1.7;}
+.s5-activate-btn{width:100%;background:var(--gold);border:none;color:var(--black);
+  font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:4px;
+  padding:15px;font-weight:700;display:none;margin-bottom:24px;}
+.s5-activate-btn.show{display:block;}
+.s5-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px;}
+.s5-table{width:100%;border-collapse:collapse;min-width:420px;}
+.s5-table th{font-size:0.78rem;letter-spacing:2px;color:rgba(255,184,0,0.4);
+  padding:8px 10px;border-bottom:1px solid rgba(255,184,0,0.1);
+  text-align:center;font-weight:400;}
+.s5-table th:first-child{text-align:left;}
+.s5-table td{font-size:0.8rem;letter-spacing:0.5px;color:rgba(255,184,0,0.45);
+  padding:9px 10px;border-bottom:1px solid rgba(255,184,0,0.04);text-align:center;}
+.s5-table td:first-child{text-align:left;color:rgba(255,184,0,0.5);}
+.t-yes{color:var(--green);}
+.t-no{color:rgba(255,255,255,0.14);}
+.t-vip{color:var(--vip);font-weight:700;}
+
+/* ═══════════════════════════════
+   S6 — DASHBOARD
+═══════════════════════════════ */
+/* FIXED: responsive single-column on mobile */
+#s6{top:var(--nav-h);bottom:var(--bar-h);overflow:hidden;}
+#s6-ticker{position:absolute;top:0;left:0;right:0;height:30px;
+  background:rgba(10,10,10,0.92);border-bottom:1px solid rgba(255,184,0,0.07);
+  overflow:hidden;display:flex;align-items:center;z-index:10;}
+.ticker-track{display:flex;animation:tickerScroll 40s linear infinite;white-space:nowrap;}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;padding:0 20px;
+  font-size:0.78rem;letter-spacing:1px;border-right:1px solid rgba(255,184,0,0.07);}
+.t-brand{color:rgba(255,184,0,0.55);}
+.t-price{color:var(--parch);}
+.t-up{color:var(--green);}
+.t-down{color:var(--red);}
+
+/* Desktop: side-by-side. Mobile: stacked with tabs */
+#s6-body{position:absolute;top:30px;left:0;right:0;bottom:0;overflow:hidden;}
+
+/* Desktop layout */
+#s6-desktop{display:none;height:100%;grid-template-columns:1fr 320px;}
+@media(min-width:700px){#s6-desktop{display:grid;}}
+
+#s6-feed-d{overflow-y:auto;padding:20px 22px;border-right:1px solid rgba(255,184,0,0.07);}
+#s6-feed-d::-webkit-scrollbar{width:4px;}
+#s6-feed-d::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+#s6-spirits-d{overflow-y:auto;padding:16px 12px;}
+#s6-spirits-d::-webkit-scrollbar{width:3px;}
+#s6-spirits-d::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+
+/* Mobile layout: tabs */
+#s6-mobile{display:flex;flex-direction:column;height:100%;}
+@media(min-width:700px){#s6-mobile{display:none;}}
+.s6-mobile-tabs{display:flex;border-bottom:1px solid rgba(255,184,0,0.08);flex-shrink:0;}
+.s6-mtab{flex:1;background:transparent;border:none;padding:11px 8px;
+  font-size:0.72rem;letter-spacing:2px;color:rgba(255,184,0,0.3);
+  border-bottom:2px solid transparent;transition:all 0.25s;}
+.s6-mtab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.s6-mobile-panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:16px 14px;}
+.s6-mobile-panel::-webkit-scrollbar{width:3px;}
+.s6-mobile-panel.active{display:block;}
+
+/* Shared dashboard content styles */
+.s6-welcome-prompt{font-size:0.78rem;letter-spacing:2.5px;color:var(--copper);margin-bottom:4px;}
+.s6-welcome-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.5rem,4vw,2.4rem);
+  letter-spacing:6px;color:var(--gold);line-height:1;margin-bottom:4px;}
+.s6-welcome-sub{font-size:0.82rem;letter-spacing:1px;color:rgba(255,184,0,0.35);
+  margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,184,0,0.07);}
+/* FIXED: 2x2 on mobile */
+.s6-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:18px;}
+@media(min-width:600px){.s6-stats{grid-template-columns:repeat(4,1fr);}}
+.s6-stat{border:1px solid rgba(255,184,0,0.1);padding:11px 12px;background:rgba(255,184,0,0.01);}
+.s6-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:2px;color:var(--gold);line-height:1;}
+.s6-stat-key{font-size:0.65rem;letter-spacing:2px;color:rgba(255,184,0,0.3);margin-top:3px;}
+.s6-gender-legend{display:flex;gap:14px;padding:8px 10px;
+  border:1px solid rgba(255,184,0,0.07);margin-bottom:14px;flex-wrap:wrap;}
+.s6-legend-item{display:flex;align-items:center;gap:7px;font-size:0.8rem;}
+.s6-legend-rect{width:14px;height:6px;}
+.s6-legend-rect.male{background:var(--male);}
+.s6-legend-rect.female{background:var(--female);}
+.s6-legend-rect.other{background:var(--other);opacity:0.6;}
+.s6-legend-lbl.male{color:var(--male);}
+.s6-legend-lbl.female{color:var(--female);}
+.s6-legend-lbl.other{color:rgba(240,238,216,0.6);}
+.s6-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.s6-section-lbl{font-size:0.78rem;letter-spacing:3px;color:rgba(255,184,0,0.35);}
+.s6-section-act{font-size:0.8rem;letter-spacing:2px;color:var(--copper);}
+/* FIXED: 2-col on mobile */
+.s6-conn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px;}
+@media(min-width:600px){.s6-conn-grid{grid-template-columns:repeat(3,1fr);}}
+.s6-conn{border:1px solid rgba(255,184,0,0.09);padding:11px 10px;
+  background:rgba(255,184,0,0.008);transition:all 0.3s;cursor:pointer;}
+.s6-conn:active{border-color:rgba(255,184,0,0.25);}
+.s6-gender-bar{width:100%;height:3px;margin-bottom:7px;}
+.s6-gender-bar.male{background:var(--male);}
+.s6-gender-bar.female{background:var(--female);}
+.s6-gender-bar.other{background:var(--other);opacity:0.5;}
+.s6-conn-name{font-size:0.82rem;letter-spacing:1px;margin-bottom:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.s6-conn-name.male{color:var(--male);}
+.s6-conn-name.female{color:var(--female);}
+.s6-conn-name.other{color:var(--other);}
+.s6-conn-name.default{color:var(--gold);}
+.s6-conn-drink{font-size:0.78rem;letter-spacing:0.5px;color:var(--copper);}
+.s6-conn-city{font-size:0.72rem;letter-spacing:0.5px;color:rgba(255,184,0,0.25);margin-top:3px;}
+.s6-upgrade-block{border:1px solid rgba(255,184,0,0.1);padding:16px 14px;
+  background:rgba(255,184,0,0.01);margin-bottom:18px;}
+.s6-upgrade-lbl{font-size:0.72rem;letter-spacing:3px;color:rgba(255,184,0,0.35);margin-bottom:7px;}
+.s6-upgrade-copy{font-size:0.85rem;letter-spacing:0.5px;color:rgba(255,184,0,0.5);
+  line-height:1.9;margin-bottom:14px;}
+.s6-upgrade-btn{background:var(--gold);border:none;color:var(--black);
+  font-family:'Share Tech Mono',monospace;font-size:0.85rem;letter-spacing:2px;
+  padding:11px 20px;font-weight:700;width:100%;transition:all 0.25s;}
+.s6-upgrade-btn:active{background:#ffd055;}
+.s6-activity-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,184,0,0.04);}
+.s6-act-time{font-size:0.72rem;letter-spacing:1px;color:rgba(255,184,0,0.22);
+  white-space:nowrap;min-width:72px;}
+.s6-act-text{font-size:0.82rem;letter-spacing:0.5px;color:rgba(255,184,0,0.5);}
+/* spirits */
+.s6-spirits-hdr{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,184,0,0.08);}
+.s6-spirits-title{font-size:0.78rem;letter-spacing:3px;color:rgba(255,184,0,0.4);}
+.s6-spirits-live{font-size:0.78rem;letter-spacing:2px;color:var(--green);}
+.s6-spirits-live::before{content:'▮ ';}
+.s6-spirit{border:1px solid rgba(255,184,0,0.08);background:rgba(255,184,0,0.007);
+  margin-bottom:6px;cursor:pointer;transition:all 0.3s;overflow:hidden;}
+.s6-spirit:active,.s6-spirit.open{border-color:rgba(255,184,0,0.2);}
+.s6-spirit-row{display:flex;align-items:center;padding:10px 10px;gap:8px;}
+.s6-spirit-rect{width:8px;height:16px;flex-shrink:0;}
+.s6-spirit-brand{font-size:0.85rem;letter-spacing:1px;color:var(--parch);flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.s6-spirit-price{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--gold);
+  min-width:50px;text-align:right;}
+.s6-spirit-chg{font-size:0.8rem;font-family:'Bebas Neue',sans-serif;min-width:48px;text-align:right;}
+.s6-spirit-chg.up{color:var(--green);}
+.s6-spirit-chg.down{color:var(--red);}
+.s6-spirit-expand{max-height:0;overflow:hidden;transition:max-height 0.4s ease;padding:0 10px;}
+.s6-spirit.open .s6-spirit-expand{max-height:200px;}
+.s6-spirit-inner{padding:8px 0 12px;border-top:1px solid rgba(255,184,0,0.06);}
+.s6-spirit-country{font-size:0.78rem;letter-spacing:1px;color:var(--copper);margin-bottom:5px;}
+.s6-spirit-story{font-size:0.82rem;letter-spacing:0.5px;color:rgba(255,184,0,0.4);
+  line-height:1.8;margin-bottom:6px;}
+.s6-spirit-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.s6-spirit-tag{font-size:0.65rem;letter-spacing:1px;border:1px solid rgba(255,184,0,0.12);
+  padding:3px 8px;color:rgba(255,184,0,0.4);}
+/* hidden opener */
+#s6-opener{position:absolute;bottom:10px;right:14px;width:34px;height:50px;
+  opacity:0.08;cursor:pointer;transition:opacity 0.4s,transform 0.3s;}
+#s6-opener:active{opacity:0.9;}
+@media(pointer:fine){#s6-opener:hover{opacity:0.9;transform:scale(1.12) rotate(-8deg);}}
+#s6-opener-nudge{position:absolute;bottom:66px;right:12px;font-size:0.62rem;
+  letter-spacing:1px;color:rgba(255,184,0,0.18);writing-mode:vertical-rl;
+  pointer-events:none;animation:nudge 3s ease-in-out infinite;}
+
+/* DRUNK OVERLAY */
+#drunkOverlay{position:fixed;inset:0;background:var(--black);z-index:900;display:none;}
+#drunkOverlay.active{display:flex;flex-direction:column;}
+#drunkTerminal{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:28px 20px;overflow:hidden;}
+#drunkTerminal.t1{animation:t1 0.4s ease-in-out forwards;}
+#drunkTerminal.t2{animation:t2 0.6s ease-in-out forwards;}
+#drunkTerminal.t3{animation:t3 0.5s ease-in-out forwards;}
+#drunkTerminal.tsober{animation:tsober 0.8s ease-out forwards;}
+@keyframes t1{0%{transform:rotate(0)}50%{transform:rotate(-2.5deg)}100%{transform:rotate(1.5deg)}}
+@keyframes t2{0%{transform:rotate(1.5deg)}50%{transform:rotate(3deg)}100%{transform:rotate(-1deg)}}
+@keyframes t3{0%{transform:rotate(-1deg)}50%{transform:rotate(-3.5deg)}100%{transform:rotate(2deg)}}
+@keyframes tsober{0%{transform:rotate(2deg)}100%{transform:rotate(0)}}
+#drunkTerminal.bmild{filter:blur(0.6px);}
+#drunkTerminal.bheavy{filter:blur(1.5px);}
+#drunkTerminal.bgone{filter:blur(0);}
+#drunkStatus{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,6vw,4rem);
+  letter-spacing:10px;color:var(--gold);text-align:center;
+  margin-bottom:6px;text-shadow:var(--glow);}
+#drunkSub{text-align:center;font-size:0.85rem;letter-spacing:2px;
+  color:rgba(255,184,0,0.32);margin-bottom:18px;}
+#drunkBoard{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.dr-row{display:grid;grid-template-columns:130px 1fr 70px 65px;align-items:center;
+  gap:8px;padding:7px 8px;border-bottom:1px solid rgba(255,184,0,0.05);overflow:hidden;}
+@media(min-width:520px){.dr-row{grid-template-columns:180px 1fr 85px 75px;}}
+.dr-row.fup{background:rgba(57,255,20,0.05);}
+.dr-row.fdown{background:rgba(255,0,60,0.05);}
+.dr-name{font-size:0.85rem;font-family:'Bebas Neue',sans-serif;letter-spacing:1.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dr-name.glitch{animation:cglitch 0.12s steps(1) infinite;}
+@keyframes cglitch{0%{transform:translateX(0)}25%{color:var(--red);transform:translateX(-2px)}50%{color:var(--cyan);transform:translateX(2px)}100%{transform:translateX(0)}}
+.dr-bar-wrap{position:relative;height:18px;}
+.dr-bar-bg{height:100%;background:rgba(255,184,0,0.04);border:1px solid rgba(255,184,0,0.07);}
+.dr-bar-fill{position:absolute;top:0;left:0;height:100%;
+  background:linear-gradient(90deg,rgba(255,184,0,0.1),rgba(255,184,0,0.3));transition:width 0.5s;}
+.dr-bar-lbl{position:absolute;inset:0;display:flex;align-items:center;padding:0 6px;
+  font-size:0.7rem;color:rgba(255,184,0,0.35);white-space:nowrap;overflow:hidden;}
+.dr-price{font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:var(--parch);
+  text-align:right;transition:color 0.2s;}
+.dr-chg{font-family:'Bebas Neue',sans-serif;font-size:0.85rem;text-align:right;}
+.dr-chg.up{color:var(--green);}
+.dr-chg.down{color:var(--red);}
+#soberFlash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,8vw,5rem);
+  letter-spacing:14px;color:var(--gold);opacity:0;text-shadow:var(--glow);pointer-events:none;}
+#soberFlash.show{animation:soberAnim 1.5s ease-out forwards;}
+@keyframes soberAnim{0%{opacity:0;filter:blur(20px)}30%{opacity:1;filter:blur(0)}70%{opacity:1}100%{opacity:0}}
+/* MATCH GRID */
+#matchGrid{display:none;flex-direction:column;height:100%;padding:20px 16px;}
+#matchGrid.show{display:flex;}
+.mg-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.4rem,4vw,2.2rem);
+  letter-spacing:10px;color:var(--gold);text-align:center;margin-bottom:5px;}
+.mg-sub{font-size:0.8rem;letter-spacing:2px;color:rgba(255,184,0,0.32);
+  text-align:center;margin-bottom:16px;}
+.mg-wrap{flex:1;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:8px;overflow-y:auto;-webkit-overflow-scrolling:touch;align-content:start;}
+.mg-wrap::-webkit-scrollbar{width:3px;}
+.mg-wrap::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+.mg-card{border:1px solid rgba(255,184,0,0.12);padding:14px 12px;
+  background:rgba(255,184,0,0.012);opacity:0;transform:translateY(10px);
+  transition:all 0.4s ease;}
+.mg-card.show{opacity:1;transform:translateY(0);}
+.mg-gender-bar{width:100%;height:3px;margin-bottom:7px;}
+.mg-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;margin-bottom:3px;}
+.mg-drink{font-size:0.78rem;letter-spacing:1px;color:var(--copper);margin-bottom:2px;}
+.mg-city{font-size:0.72rem;letter-spacing:1px;color:rgba(255,184,0,0.3);margin-bottom:10px;}
+.mg-cheers-btn{width:100%;background:transparent;border:1px solid rgba(255,184,0,0.2);
+  color:rgba(255,184,0,0.55);font-family:'Share Tech Mono',monospace;
+  font-size:0.82rem;letter-spacing:1.5px;padding:8px;transition:all 0.25s;}
+.mg-cheers-btn:active{border-color:var(--gold);color:var(--gold);}
+.mg-close-row{margin-top:12px;text-align:center;}
+.mg-close-btn{background:transparent;border:1px solid rgba(255,184,0,0.15);
+  color:rgba(255,184,0,0.4);font-family:'Share Tech Mono',monospace;
+  font-size:0.85rem;letter-spacing:2px;padding:11px 28px;transition:all 0.25s;}
+.mg-close-btn:active{border-color:rgba(255,184,0,0.4);color:var(--gold);}
+
+/* UPGRADE MODAL */
+#upgradeModal{z-index:800;}
+.upgrade-modal-box{max-width:820px !important;}
+/* FIXED: responsive tier grid in modal */
+.um-tier-grid{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:18px;}
+@media(min-width:520px){.um-tier-grid{grid-template-columns:repeat(3,1fr);}}
+.um-tier{border:1px solid rgba(255,184,0,0.1);padding:14px 12px;background:rgba(255,184,0,0.01);}
+.um-tier-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:3px;
+  color:var(--gold);margin-bottom:3px;}
+.um-tier-price{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;
+  letter-spacing:2px;color:var(--gold);line-height:1;}
+.um-tier-freq{font-size:0.65rem;letter-spacing:2px;color:rgba(255,184,0,0.28);margin-bottom:6px;}
+.um-tier-desc{font-size:0.8rem;letter-spacing:0.5px;color:rgba(255,184,0,0.45);line-height:1.7;}
+.um-vip{border-color:rgba(200,169,110,0.25);position:relative;overflow:hidden;}
+@media(min-width:520px){.um-vip{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;}}
+.um-vip::after{content:'★ DON\'T MISS';position:absolute;top:0;right:0;background:var(--vip);
+  color:var(--black);font-size:0.62rem;letter-spacing:1.5px;padding:4px 12px;font-weight:700;}
+.um-vip-price .um-tier-price{color:var(--vip);}
+.um-vip-highlight{border:1px solid rgba(200,169,110,0.28);background:rgba(200,169,110,0.06);
+  padding:9px 12px;font-size:0.82rem;letter-spacing:0.8px;color:var(--vip);line-height:1.7;
+  margin-top:8px;}
+@media(min-width:520px){.um-vip-highlight{margin-top:0;}}
+.um-vip-highlight strong{display:block;font-size:0.9rem;margin-bottom:3px;}
+.um-select-row{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+@media(min-width:400px){.um-select-row{grid-template-columns:repeat(4,1fr);}}
+.um-sel-btn{background:transparent;border:1px solid rgba(255,184,0,0.18);
+  color:rgba(255,184,0,0.45);font-family:'Share Tech Mono',monospace;
+  font-size:0.8rem;letter-spacing:1.5px;padding:11px 8px;transition:all 0.25s;}
+.um-sel-btn.active,.um-sel-btn:active{border-color:var(--gold);color:var(--gold);
+  background:rgba(255,184,0,0.04);}
+.um-sel-btn.vip-sel{border-color:rgba(200,169,110,0.3);color:var(--vip);}
+.um-sel-btn.vip-sel.active,.um-sel-btn.vip-sel:active{border-color:var(--vip);
+  background:rgba(200,169,110,0.05);}
+
+/* ═══════════════════════════════
+   S7 — JOBS
+═══════════════════════════════ */
+/* FIXED: top:nav-h, proper boot sequence */
+#s7{top:var(--nav-h);bottom:var(--bar-h);overflow:hidden;}
+/* FIXED: flex-direction column on boot */
+#s7-boot{position:absolute;inset:0;background:var(--black);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 20px;z-index:50;}
+#s7-boot.done{display:none;}
+.s7-boot-line{font-size:0.82rem;letter-spacing:1.5px;color:rgba(255,184,0,0.45);
+  margin-bottom:7px;opacity:0;transform:translateX(-6px);transition:all 0.35s ease;
+  width:100%;max-width:480px;}
+.s7-boot-line.show{opacity:1;transform:translateX(0);}
+.s7-boot-line .ok{color:var(--green);}
+.s7-boot-line .gold{color:var(--gold);}
+
+#s7-main{position:absolute;inset:0;opacity:0;transition:opacity 0.6s;}
+#s7-main.show{opacity:1;}
+
+/* Desktop: 3-col. Mobile: tab-based single panel */
+#s7-desktop{display:none;height:100%;grid-template-columns:250px 1fr 272px;}
+@media(min-width:800px){#s7-desktop{display:grid;}}
+
+#s7-filters-d{border-right:1px solid rgba(255,184,0,0.07);
+  padding:16px 14px;overflow-y:auto;background:rgba(255,184,0,0.004);}
+#s7-filters-d::-webkit-scrollbar{width:3px;}
+#s7-filters-d::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.08);}
+#s7-feed-d{overflow-y:auto;padding:16px 18px;border-right:1px solid rgba(255,184,0,0.07);}
+#s7-feed-d::-webkit-scrollbar{width:4px;}
+#s7-feed-d::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.1);}
+#s7-detail-d{overflow-y:auto;padding:16px 14px;background:rgba(255,184,0,0.003);}
+#s7-detail-d::-webkit-scrollbar{width:3px;}
+#s7-detail-d::-webkit-scrollbar-thumb{background:rgba(255,184,0,0.08);}
+
+/* Mobile: 3-tab layout */
+#s7-mobile{display:flex;flex-direction:column;height:100%;}
+@media(min-width:800px){#s7-mobile{display:none;}}
+.s7-mobile-tabs{display:flex;border-bottom:1px solid rgba(255,184,0,0.08);flex-shrink:0;}
+.s7-mtab{flex:1;background:transparent;border:none;padding:11px 6px;
+  font-size:0.72rem;letter-spacing:2px;color:rgba(255,184,0,0.3);
+  border-bottom:2px solid transparent;transition:all 0.25s;}
+.s7-mtab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.s7-mobile-panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
+.s7-mobile-panel.active{display:block;}
+.s7-mobile-panel::-webkit-scrollbar{display:none;}
+
+/* Filter styles (shared) */
+.s7-filter-title{font-size:0.78rem;letter-spacing:3px;color:rgba(255,184,0,0.32);
+  margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid rgba(255,184,0,0.07);}
+.s7-filter-group{margin-bottom:16px;}
+.s7-filter-lbl{font-size:0.65rem;letter-spacing:3px;color:rgba(255,184,0,0.22);margin-bottom:7px;}
+.s7-search{width:100%;background:transparent;border:none;
+  border-bottom:1px solid rgba(255,184,0,0.15);color:var(--gold);
+  font-family:'Share Tech Mono',monospace;font-size:0.85rem;letter-spacing:1.5px;
+  padding:8px 4px;margin-bottom:14px;}
+.s7-search::placeholder{color:rgba(255,184,0,0.18);}
+.s7-search:focus{border-bottom-color:var(--gold);}
+.s7-chip{display:flex;align-items:center;gap:7px;padding:7px 10px;margin-bottom:3px;
+  border:1px solid rgba(255,184,0,0.08);background:transparent;
+  color:rgba(255,184,0,0.4);font-family:'Share Tech Mono',monospace;
+  font-size:0.78rem;letter-spacing:1px;transition:all 0.2s;text-align:left;width:100%;
+  position:relative;}
+.s7-chip::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--gold);transform:scaleY(0);transition:transform 0.2s;}
+.s7-chip.active{border-color:rgba(255,184,0,0.3);color:var(--gold);background:rgba(255,184,0,0.03);}
+.s7-chip.active::before{transform:scaleY(1);}
+.s7-chip-count{margin-left:auto;font-size:0.65rem;color:rgba(255,184,0,0.22);
+  background:rgba(255,184,0,0.05);padding:1px 6px;}
+.s7-chip.active .s7-chip-count{color:var(--gold);}
+.s7-clear-btn{width:100%;background:transparent;border:1px solid rgba(255,184,0,0.1);
+  color:rgba(255,184,0,0.28);font-family:'Share Tech Mono',monospace;
+  font-size:0.72rem;letter-spacing:2px;padding:8px;transition:all 0.2s;margin-top:4px;}
+.s7-clear-btn:active{border-color:rgba(255,184,0,0.3);color:rgba(255,184,0,0.6);}
+
+/* Feed header */
+.s7-feed-hdr{display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,184,0,0.08);
+  flex-wrap:wrap;gap:8px;}
+.s7-feed-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:5px;color:var(--gold);}
+.s7-feed-meta{font-size:0.78rem;letter-spacing:1.5px;color:rgba(255,184,0,0.32);margin-top:2px;}
+.s7-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.s7-sort-btn{background:transparent;border:1px solid rgba(255,184,0,0.1);
+  color:rgba(255,184,0,0.32);font-family:'Share Tech Mono',monospace;
+  font-size:0.72rem;letter-spacing:1.5px;padding:6px 10px;transition:all 0.2s;}
+.s7-sort-btn.active,.s7-sort-btn:active{border-color:rgba(255,184,0,0.3);color:var(--gold);}
+.s7-post-btn{background:var(--gold);border:none;color:var(--black);
+  font-family:'Share Tech Mono',monospace;font-size:0.8rem;letter-spacing:1.5px;
+  padding:8px 14px;font-weight:700;white-space:nowrap;transition:all 0.2s;}
+.s7-post-btn:active{background:#ffd055;}
+
+/* Job cards */
+.s7-job{border:1px solid rgba(255,184,0,0.09);background:rgba(255,184,0,0.007);
+  padding:16px 16px;margin-bottom:8px;cursor:pointer;transition:all 0.3s;
+  position:relative;overflow:hidden;opacity:0;transform:translateY(7px);}
+.s7-job::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+  background:var(--gold);transform:scaleY(0);transform-origin:bottom;transition:transform 0.3s;}
+.s7-job.show{opacity:1;transform:translateY(0);}
+.s7-job.featured::before{transform:scaleY(1);}
+.s7-job.vip-locked{opacity:0.65;}
+.s7-job.active-job{border-color:rgba(255,184,0,0.35);background:rgba(255,184,0,0.02);}
+.s7-job:active::before{transform:scaleY(1);}
+.s7-job-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.s7-job-icon{width:36px;height:36px;border:1px solid rgba(255,184,0,0.15);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.s7-job-title{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;
+  color:var(--parch);margin-bottom:2px;line-height:1.1;}
+.s7-job-company{font-size:0.78rem;letter-spacing:1px;color:var(--copper);}
+.s7-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.badge{font-size:0.62rem;letter-spacing:1px;border:1px solid;padding:3px 8px;}
+.b-type{border-color:rgba(255,184,0,0.2);color:rgba(255,184,0,0.45);}
+.b-loc{border-color:rgba(184,115,51,0.25);color:var(--copper);}
+.b-exp{border-color:rgba(255,184,0,0.12);color:rgba(255,184,0,0.32);}
+.b-new{border-color:rgba(57,255,20,0.4);color:var(--green);background:rgba(57,255,20,0.03);}
+.b-vip{border-color:rgba(200,169,110,0.4);color:var(--vip);background:rgba(200,169,110,0.03);}
+.b-urg{border-color:rgba(255,0,60,0.4);color:var(--red);background:rgba(255,0,60,0.03);}
+.s7-job-desc{font-size:0.8rem;letter-spacing:0.5px;color:rgba(255,184,0,0.38);
+  line-height:1.7;margin-bottom:10px;}
+.s7-job-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.s7-job-meta{display:flex;gap:10px;flex-wrap:wrap;}
+.s7-meta-item{font-size:0.68rem;letter-spacing:1px;color:rgba(255,184,0,0.22);}
+.s7-meta-item span{color:rgba(255,184,0,0.45);}
+.s7-apply-btn{background:transparent;border:1px solid rgba(255,184,0,0.2);
+  color:rgba(255,184,0,0.5);font-family:'Share Tech Mono',monospace;
+  font-size:0.78rem;letter-spacing:1.5px;padding:7px 14px;transition:all 0.25s;}
+.s7-apply-btn:active{border-color:var(--gold);color:var(--gold);}
+.s7-vip-lock{position:absolute;top:0;right:0;background:rgba(200,169,110,0.08);
+  border-left:1px solid rgba(200,169,110,0.2);border-bottom:1px solid rgba(200,169,110,0.2);
+  font-size:0.62rem;letter-spacing:1.5px;color:var(--vip);padding:3px 10px;}
+
+/* Job detail */
+.s7-detail-empty{height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;gap:8px;opacity:0.3;padding:20px;}
+.s7-d-empty-icon{width:40px;height:40px;border:1px solid rgba(255,184,0,0.2);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+.s7-d-empty-txt{font-size:0.8rem;letter-spacing:2px;color:rgba(255,184,0,0.4);}
+.s7-d-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:3px;
+  color:var(--gold);margin-bottom:3px;line-height:1.1;}
+.s7-d-company{font-size:0.85rem;letter-spacing:1px;color:var(--copper);margin-bottom:8px;}
+.s7-d-salary{font-size:0.8rem;letter-spacing:1px;color:rgba(255,184,0,0.35);
+  margin-bottom:10px;padding-bottom:12px;border-bottom:1px solid rgba(255,184,0,0.08);}
+.s7-d-salary span{color:var(--gold);}
+.s7-d-section{margin-bottom:14px;}
+.s7-d-lbl{font-size:0.65rem;letter-spacing:3px;color:rgba(255,184,0,0.22);
+  margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid rgba(255,184,0,0.05);}
+.s7-d-body{font-size:0.8rem;letter-spacing:0.5px;color:rgba(255,184,0,0.45);line-height:1.8;}
+.s7-d-req{display:flex;align-items:flex-start;gap:7px;padding:5px 0;
+  border-bottom:1px solid rgba(255,184,0,0.04);font-size:0.8rem;
+  letter-spacing:0.5px;color:rgba(255,184,0,0.42);}
+.s7-d-req::before{content:'▸';color:var(--gold);flex-shrink:0;font-size:0.65rem;margin-top:2px;}
+.s7-d-perks{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.s7-d-perk{font-size:0.65rem;letter-spacing:1px;border:1px solid rgba(255,184,0,0.12);
+  padding:3px 9px;color:rgba(255,184,0,0.4);}
+.s7-d-contact{border:1px solid rgba(255,184,0,0.1);padding:12px 14px;
+  background:rgba(255,184,0,0.01);margin-bottom:10px;}
+.s7-d-contact-lbl{font-size:0.65rem;letter-spacing:3px;color:rgba(255,184,0,0.22);margin-bottom:5px;}
+.s7-d-contact-name{font-size:0.88rem;letter-spacing:1px;color:var(--parch);margin-bottom:2px;}
+.s7-d-contact-role{font-size:0.78rem;letter-spacing:0.5px;color:rgba(255,184,0,0.32);}
+.s7-d-apply-btn{width:100%;background:var(--gold);border:none;color:var(--black);
+  font-family:'Share Tech Mono',monospace;font-size:0.9rem;letter-spacing:3px;
+  padding:13px;font-weight:700;margin-bottom:7px;transition:all 0.2s;}
+.s7-d-apply-btn:active{background:#ffd055;}
+.s7-d-save-btn{width:100%;background:transparent;border:1px solid rgba(255,184,0,0.15);
+  color:rgba(255,184,0,0.38);font-family:'Share Tech Mono',monospace;
+  font-size:0.8rem;letter-spacing:2px;padding:10px;transition:all 0.2s;}
+.s7-d-save-btn:active{border-color:rgba(255,184,0,0.35);color:rgba(255,184,0,0.7);}
+
+/* Forms */
+.form-lbl{font-size:0.68rem;letter-spacing:3px;color:rgba(255,184,0,0.28);
+  margin-bottom:5px;display:block;}
+.form-input,.form-sel,.form-ta{width:100%;background:transparent;border:none;
+  border-bottom:1px solid rgba(255,184,0,0.18);color:var(--parch);
+  font-family:'Share Tech Mono',monospace;font-size:0.9rem;
+  letter-spacing:0.5px;padding:9px 4px;margin-bottom:14px;-webkit-appearance:none;}
+.form-input::placeholder,.form-ta::placeholder{color:rgba(255,184,0,0.18);}
+.form-input:focus,.form-sel:focus,.form-ta:focus{border-bottom-color:var(--gold);}
+.form-sel option{background:#0f0f0f;}
+.form-ta{resize:none;height:70px;line-height:1.5;}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:400px){.form-row-2{grid-template-columns:1fr;}}
+.form-note{font-size:0.72rem;letter-spacing:1px;color:rgba(255,184,0,0.2);
+  margin-bottom:14px;line-height:1.7;}
+.apply-icon-wrap{width:48px;height:48px;border:1px solid rgba(255,184,0,0.22);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.apply-job-name{font-size:0.9rem;letter-spacing:2px;color:var(--parch);margin-bottom:3px;}
+.apply-company{font-size:0.82rem;letter-spacing:1px;color:var(--copper);margin-bottom:16px;}
+.apply-note{font-size:0.82rem;letter-spacing:0.5px;color:rgba(255,184,0,0.38);
+  line-height:1.7;margin-bottom:18px;}
+</style>
+</head>
+<body>
+
+<!-- CURSOR (desktop only, controlled via CSS @media pointer:fine) -->
+<div class="cur-dot" id="curDot"></div>
+<div class="cur-ring" id="curRing"></div>
+
+<!-- ════════ SCREEN 1 — SPLASH ════════ -->
+<div class="screen active" id="s1">
+  <div class="s1-boot" id="s1Boot"></div>
+  <div class="s1-logo">JOBZ.BAR</div>
+  <div class="s1-tagline">THE ALCOHOL INDUSTRY. CONNECTED.</div>
+  <button class="s1-enter-btn" id="s1EnterBtn" style="display:none;" onclick="goTo('s2')">[&nbsp;ENTER&nbsp;]</button>
+  <svg class="s1-opener" id="s1Opener" viewBox="0 0 36 52" fill="none" onclick="s1OpenerFound()">
+    <rect x="14" y="2" width="8" height="28" stroke="rgba(255,184,0,0.9)" stroke-width="1.5" fill="none"/>
+    <path d="M22 8C28 8 30 12 30 16C30 20 26 22 22 22" stroke="rgba(255,184,0,0.9)" stroke-width="1.5" fill="none"/>
+    <line x1="16" y1="25" x2="22" y2="25" stroke="rgba(255,184,0,0.6)" stroke-width="1.5"/>
+    <rect x="15" y="30" width="6" height="16" stroke="rgba(184,115,51,0.7)" stroke-width="1.2" fill="none"/>
+  </svg>
+  <div class="s1-opener-nudge">psst… opener 🍺</div>
+</div>
+
+<!-- ════════ SCREEN 2 — AUTH ════════ -->
+<div class="screen" id="s2">
+  <div class="s2-header">
+    <div class="s2-eyebrow">&gt; IDENTITY VERIFICATION</div>
+    <div class="s2-title">YOUR NUMBER</div>
+    <div class="s2-sub">21+ ONLY · PHONE VERIFICATION REQUIRED</div>
+  </div>
+  <div class="s2-panel">
+    <div class="s2-country-row">
+      <select class="s2-country-sel" id="s2Country" onchange="s2UpdateCountry()">
+        <option data-code="+91">🇮🇳 +91</option>
+        <option data-code="+1">🇺🇸 +1</option>
+        <option data-code="+44">🇬🇧 +44</option>
+        <option data-code="+971">🇦🇪 +971</option>
+        <option data-code="+65">🇸🇬 +65</option>
+        <option data-code="+61">🇦🇺 +61</option>
+        <option data-code="+81">🇯🇵 +81</option>
+        <option data-code="+49">🇩🇪 +49</option>
+      </select>
+    </div>
+    <div class="s2-dial" id="s2Dial"></div>
+    <div id="s2Numpad"></div>
+    <button class="s2-send-btn" id="s2SendBtn" onclick="s2Send()">&gt; SEND OTP</button>
+    <div class="s2-otp-panel" id="s2OtpPanel">
+      <div class="s2-otp-label">&gt; ENTER THE 6-DIGIT CODE SENT TO YOUR PHONE</div>
+      <div class="s2-otp-row" id="s2OtpRow"></div>
+      <div id="s2OtpNumpad"></div>
+      <button class="s2-verify-btn" onclick="s2Verify()">&gt; VERIFY &amp; CONTINUE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SCREEN 3 — MISSION ════════ -->
+<div class="screen" id="s3">
+  <div class="s3-inner">
+    <div class="s3-eyebrow">&gt; MISSION BRIEFING · SELECT ALL THAT APPLY</div>
+    <div class="s3-title">WHY ARE YOU HERE?</div>
+    <div class="s3-sub">Choose your missions. Shapes your feed and connections.</div>
+    <div class="s3-prog"><div class="s3-prog-fill" id="s3ProgFill" style="width:0%"></div></div>
+    <div class="s3-grid" id="s3Grid"></div>
+    <button class="s3-confirm-btn" id="s3ConfirmBtn" onclick="s3Confirm()">&gt; SELECT AT LEAST ONE MISSION</button>
+  </div>
+</div>
+
+<!-- ════════ SCREEN 4 — PERSONA ════════ -->
+<div class="screen" id="s4">
+  <div class="s4-inner" id="s4Inner"></div>
+  <!-- Desktop side dossier -->
+  <div class="s4-dossier-side" id="s4DossierSide">
+    <div style="font-size:0.65rem;letter-spacing:3px;color:rgba(255,184,0,0.2);margin-bottom:10px;">// DOSSIER</div>
+    <div id="s4DossierSideItems"></div>
+  </div>
+  <!-- Age block -->
+  <div class="s4-age-block" id="s4AgeBlock">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,6vw,3.5rem);letter-spacing:9px;color:var(--red);margin-bottom:12px;">ACCESS DENIED</div>
+    <div style="font-size:0.9rem;letter-spacing:2px;color:rgba(255,0,60,0.7);margin-bottom:8px;">MUST BE 21+ TO JOIN JOBZ.BAR</div>
+    <div style="font-size:0.8rem;letter-spacing:1.5px;color:rgba(255,0,60,0.45);margin-bottom:22px;" id="s4EligibleDate"></div>
+    <button style="background:transparent;border:1px solid rgba(255,0,60,0.3);color:rgba(255,0,60,0.5);font-family:'Share Tech Mono',monospace;font-size:0.82rem;letter-spacing:2px;padding:11px 24px;" onclick="document.getElementById('s4AgeBlock').classList.remove('show')">&gt; GO BACK</button>
+  </div>
+</div>
+
+<!-- ════════ SCREEN 5 — CODENAME + TIERS ════════ -->
+<div class="screen" id="s5">
+  <!-- Phase 1 -->
+  <div class="s5-phase active" id="s5Phase1">
+    <div style="font-size:0.68rem;letter-spacing:4px;color:rgba(255,184,0,0.28);margin-bottom:7px;">&gt; IDENTITY GENERATION · PHASE 5 OF 7</div>
+    <div class="s5-hdg">YOUR CODENAME</div>
+    <div class="s5-sub-txt">Generated from your drink, destination &amp; personality. Edit freely.</div>
+    <div class="s5-codename-display" id="s5CodeDisplay">—</div>
+    <input class="s5-codename-edit" id="s5CodeEdit" maxlength="24" oninput="s5SanitizeCode()" placeholder="YOUR_CODENAME">
+    <div class="s5-dossier-card" id="s5DossierCard"></div>
+    <button class="s5-lock-btn" onclick="s5LockIdentity()">&gt; LOCK IDENTITY · CHOOSE YOUR TIER</button>
+  </div>
+  <!-- Phase 2 -->
+  <div class="s5-phase" id="s5Phase2">
+    <div style="font-size:0.68rem;letter-spacing:4px;color:rgba(255,184,0,0.28);margin-bottom:7px;">&gt; SUBSCRIPTION · CHOOSE YOUR POUR</div>
+    <div class="s5-hdg">ACCESS TIERS</div>
+    <div class="s5-sub-txt">Each tier opens a different part of the bar.</div>
+    <div class="s5-tiers-grid" id="s5TiersGrid"></div>
+    <button class="s5-activate-btn" id="s5ActivateBtn" onclick="s5Activate()">&gt; ACTIVATE &amp; ENTER THE BAR</button>
+    <div style="font-size:0.78rem;letter-spacing:3px;color:rgba(255,184,0,0.28);margin-bottom:10px;margin-top:8px;">// FULL COMPARISON</div>
+    <div class="s5-table-wrap">
+      <table class="s5-table">
+        <thead><tr>
+          <th style="text-align:left">BENEFIT</th>
+          <th>₹30</th><th>₹60</th><th>₹90</th><th style="color:var(--vip)">₹1001</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Same drink connections</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>CHEERS engine</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>Job board</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>Cross-drink networking</td><td class="t-no">—</td><td class="t-yes">▮</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>Any gender connections</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>Gender colors on profiles</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td>Priority events</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-yes">▮</td><td class="t-yes">▮</td></tr>
+          <tr><td style="color:var(--vip)">🎲 1 free invite/month</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-vip">▮ MONTHLY</td></tr>
+          <tr><td>VIP confidential jobs</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-no">—</td><td class="t-yes">▮</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SCREEN 6 — DASHBOARD ════════ -->
+<div class="screen" id="s6">
+  <div id="s6-ticker"><div class="ticker-track" id="s6TickerTrack"></div></div>
+  <div id="s6-body">
+    <!-- DESKTOP -->
+    <div id="s6-desktop">
+      <div id="s6-feed-d" id="s6FeedD"><!-- filled by JS --></div>
+      <div id="s6-spirits-d"><!-- filled by JS --></div>
+    </div>
+    <!-- MOBILE -->
+    <div id="s6-mobile">
+      <div class="s6-mobile-tabs">
+        <button class="s6-mtab active" onclick="s6MobileTab(this,'s6PanelFeed')">FEED</button>
+        <button class="s6-mtab" onclick="s6MobileTab(this,'s6PanelSpirits')">SPIRITS</button>
+        <button class="s6-mtab" onclick="s6MobileTab(this,'s6PanelActivity')">ACTIVITY</button>
+      </div>
+      <div class="s6-mobile-panel active" id="s6PanelFeed"><!-- filled --></div>
+      <div class="s6-mobile-panel" id="s6PanelSpirits"><!-- filled --></div>
+      <div class="s6-mobile-panel" id="s6PanelActivity"><!-- filled --></div>
+    </div>
+  </div>
+  <!-- hidden opener -->
+  <svg id="s6-opener" viewBox="0 0 36 52" fill="none" onclick="triggerCheers()">
+    <rect x="14" y="2" width="8" height="28" stroke="rgba(255,184,0,0.9)" stroke-width="1.5" fill="none"/>
+    <path d="M22 8C28 8 30 12 30 16C30 20 26 22 22 22" stroke="rgba(255,184,0,0.9)" stroke-width="1.5" fill="none"/>
+    <line x1="16" y1="25" x2="22" y2="25" stroke="rgba(255,184,0,0.6)" stroke-width="1.5"/>
+    <rect x="15" y="30" width="6" height="16" stroke="rgba(184,115,51,0.7)" stroke-width="1.2" fill="none"/>
+  </svg>
+  <div id="s6-opener-nudge">psst… 🍺</div>
+</div>
+
+<!-- ════════ SCREEN 7 — JOBS ════════ -->
+<div class="screen" id="s7">
+  <!-- Boot sequence -->
+  <div id="s7-boot">
+    <div class="s7-boot-line" id="s7bl0">&gt; CHECKING SUBSCRIPTION STATUS...... <span class="ok">OK</span></div>
+    <div class="s7-boot-line" id="s7bl1">&gt; VALIDATING PERSONA CLEARANCE...... <span class="ok">GRANTED</span></div>
+    <div class="s7-boot-line" id="s7bl2">&gt; DECRYPTING OPPORTUNITIES DB........ <span class="ok">DONE</span></div>
+    <div class="s7-boot-line" id="s7bl3">&gt; 347 LIVE ROLES LOADED.............. <span class="ok">READY</span></div>
+    <div class="s7-boot-line" id="s7bl4">&gt; <span class="gold">ACCESS GRANTED · JOBZ.BAR</span></div>
+  </div>
+  <div id="s7-main">
+    <!-- DESKTOP: 3-col -->
+    <div id="s7-desktop">
+      <div id="s7-filters-d"><!-- filters filled by JS --></div>
+      <div id="s7-feed-d"><!-- jobs list --></div>
+      <div id="s7-detail-d"><!-- detail panel --></div>
+    </div>
+    <!-- MOBILE: tab-based -->
+    <div id="s7-mobile">
+      <div class="s7-mobile-tabs">
+        <button class="s7-mtab active" onclick="s7MobileTab(this,'s7MFilters')">⚙ FILTER</button>
+        <button class="s7-mtab" onclick="s7MobileTab(this,'s7MFeed')">JOBS <span id="s7MCount" style="opacity:0.5;font-size:0.65rem;"></span></button>
+        <button class="s7-mtab" onclick="s7MobileTab(this,'s7MDetail')">DETAIL</button>
+      </div>
+      <div class="s7-mobile-panel active" id="s7MFilters"><!-- filters --></div>
+      <div class="s7-mobile-panel" id="s7MFeed"><!-- jobs --></div>
+      <div class="s7-mobile-panel" id="s7MDetail"><!-- detail --></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOP NAV (visible s6+) -->
+<div id="topNav">
+  <div class="nav-logo">JOBZ.BAR</div>
+  <div class="nav-badge" id="navBadge">LOADING</div>
+  <div class="nav-right">
+    <div class="nav-online" id="navOnline">ONLINE <span id="navOnlineCount">12,847</span></div>
+    <button class="nav-tab" id="navTabDash" onclick="goTo('s6')">DASH</button>
+    <button class="nav-tab" id="navTabJobs" onclick="s7GoTo()">JOBS</button>
+    <span style="font-size:0.7rem;color:rgba(255,184,0,0.18);" class="blink">█</span>
+  </div>
+</div>
+
+<!-- BOTTLE BAR (visible s2+) -->
+<div id="bottleBar">
+  <svg class="bb-icon" width="14" height="22" viewBox="0 0 18 28" fill="none">
+    <path d="M6 2L6 6C3 7 2 10 2 13L2 24C2 25.1 2.9 26 4 26L14 26C15.1 26 16 25.1 16 24L16 13C16 10 15 7 12 6L12 2Z" stroke="rgba(255,184,0,0.3)" stroke-width="1.2" fill="none"/>
+    <line x1="6" y1="2" x2="12" y2="2" stroke="rgba(255,184,0,0.3)" stroke-width="1"/>
+  </svg>
+  <div class="bb-track"><div class="bb-fill" id="bbFill" style="width:0%"></div></div>
+  <div class="bb-label" id="bbLabel">INITIALIZING</div>
+  <div class="bb-pct" id="bbPct">0%</div>
+</div>
+
+<!-- DRUNK OVERLAY -->
+<div id="drunkOverlay">
+  <div id="drunkTerminal">
+    <div id="drunkStatus">CHEERS ENGINE</div>
+    <div id="drunkSub">&gt; SCANNING THE BAR...</div>
+    <div id="drunkBoard"><div id="soberFlash">SOBERING UP...</div></div>
+  </div>
+  <div id="matchGrid">
+    <div class="mg-title">YOUR MATCHES ARE POURED</div>
+    <div class="mg-sub">&gt; FILTERED TO YOUR TIER · SAME DRINK · SAME WAVELENGTH</div>
+    <div class="mg-wrap" id="mgWrap"></div>
+    <div class="mg-close-row"><button class="mg-close-btn" onclick="closeMatches()">&gt; BACK TO COMMAND CENTER</button></div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-wrap" id="upgradeModal" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="modal-box upgrade-modal-box">
+    <button class="modal-close" onclick="closeUpgradeModal()">&gt; ✕</button>
+    <div class="modal-eyebrow">// CHOOSE YOUR POUR</div>
+    <div class="modal-title">UPGRADE</div>
+    <div class="modal-sub">&gt; EACH TIER OPENS A DIFFERENT PART OF THE BAR</div>
+    <div class="um-tier-grid">
+      <div class="um-tier"><div class="um-tier-name">THE LOCAL</div><div class="um-tier-price">₹30</div><div class="um-tier-freq">PER MONTH</div><div class="um-tier-desc">Same drink, same gender. Your corner of the bar.</div></div>
+      <div class="um-tier"><div class="um-tier-name">CROSS DRINK</div><div class="um-tier-price">₹60</div><div class="um-tier-freq">PER MONTH</div><div class="um-tier-desc">All drinks, same gender. The bar got bigger.</div></div>
+      <div class="um-tier"><div class="um-tier-name">WHOLE BAR</div><div class="um-tier-price">₹90</div><div class="um-tier-freq">PER MONTH</div><div class="um-tier-desc">Any drink, any gender. Gender colors reveal on all profiles.</div></div>
+      <div class="um-tier um-vip">
+        <div class="um-vip-price"><div class="um-tier-price">₹1001</div><div class="um-tier-freq">PER MONTH</div></div>
+        <div><div class="um-tier-name" style="color:var(--vip)">VIP ACCESS</div><div class="um-vip-highlight"><strong>🎲 1 FREE INVITE / MONTH</strong>The drunk algorithm picks a random curated get-together and drops your name on the list. You don't choose it. Just show up.</div></div>
+        <div style="align-self:center"><button style="background:var(--vip);border:none;color:var(--black);font-family:'Share Tech Mono',monospace;font-size:0.82rem;letter-spacing:1.5px;padding:11px 18px;font-weight:700;white-space:nowrap;" onclick="doUpgrade('1001')">&gt; GO VIP</button></div>
+      </div>
+    </div>
+    <div class="um-select-row">
+      <button class="um-sel-btn active" id="umBtn30" onclick="doUpgrade('30')">&gt; ₹30</button>
+      <button class="um-sel-btn" id="umBtn60" onclick="doUpgrade('60')">&gt; ₹60</button>
+      <button class="um-sel-btn" id="umBtn90" onclick="doUpgrade('90')">&gt; ₹90</button>
+      <button class="um-sel-btn vip-sel" id="umBtn1001" onclick="doUpgrade('1001')">&gt; ₹1001 VIP</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST JOB MODAL -->
+<div class="modal-wrap" id="postModal" onclick="if(event.target===this)closePostModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closePostModal()">&gt; ✕</button>
+    <div class="modal-eyebrow">// POST AN OPPORTUNITY</div>
+    <div class="modal-title">POST A JOB</div>
+    <div class="modal-sub">&gt; REACH VERIFIED BAR INDUSTRY PROFESSIONALS GLOBALLY</div>
+    <label class="form-lbl">ROLE TITLE</label>
+    <input class="form-input" id="fTitle" type="text" placeholder="E.G. SENIOR BARTENDER...">
+    <div class="form-row-2">
+      <div><label class="form-lbl">ESTABLISHMENT</label><input class="form-input" id="fCompany" type="text" placeholder="YOUR BAR / BRAND..."></div>
+      <div><label class="form-lbl">LOCATION</label><input class="form-input" id="fLoc" type="text" placeholder="CITY OR REMOTE..."></div>
+    </div>
+    <label class="form-lbl">ROLE TYPE</label>
+    <select class="form-sel" id="fType"><option value="">SELECT...</option><option>BARTENDER</option><option>MIXOLOGIST</option><option>SOMMELIER</option><option>BAR MANAGER</option><option>BRAND AMBASSADOR</option><option>EVENTS & HOSPITALITY</option><option>DISTILLERY / BREWERY</option><option>TRAINER / EDUCATOR</option></select>
+    <label class="form-lbl">DESCRIPTION</label>
+    <textarea class="form-ta" id="fDesc" placeholder="DESCRIBE THE ROLE, REQUIREMENTS, PERKS..."></textarea>
+    <div class="form-note">▸ LIVE WITHIN 2 HOURS · ALL VERIFIED MEMBERS GLOBALLY · ₹999 / 30 DAYS</div>
+    <button class="btn-gold" onclick="submitPost()">&gt; POST THIS ROLE</button>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-wrap" id="applyModal" onclick="if(event.target===this)document.getElementById('applyModal').classList.remove('open')">
+  <div class="modal-box" style="max-width:420px;text-align:center;">
+    <button class="modal-close" onclick="document.getElementById('applyModal').classList.remove('open')">&gt; ✕</button>
+    <div class="apply-icon-wrap">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" stroke="rgba(255,184,0,0.6)" stroke-width="1.2"/><polyline points="8,12 11,15 16,9" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="modal-title" style="font-size:1.5rem;">CONFIRM APPLICATION</div>
+    <div class="apply-job-name" id="applyJobName">—</div>
+    <div class="apply-company" id="applyCompany">—</div>
+    <div class="apply-note">Your persona &amp; profile will be shared with this employer. They will contact you if shortlisted.</div>
+    <button class="btn-gold" style="margin-bottom:8px;" onclick="confirmApply()">&gt; CONFIRM · APPLY NOW</button>
+    <button class="btn-outline" onclick="document.getElementById('applyModal').classList.remove('open')">&gt; CANCEL</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════
+   SESSION STATE
+═══════════════════════════════ */
+const SESSION={
+  phone:'',countryCode:'+91',missions:[],
+  persona:{drink:'',archetype:'',whyDrink:'',capacity:'',frequency:'',
+    barType:'',destination:'',personality:'',homebrew:'',gender:'',dob:'',city:'',usernameSeed:''},
+  codename:'',tier:'30',tierName:'THE LOCAL',tierPrice:30,
+  genderColors:false,cheersCount:0
+};
+
+/* ═══════════════════════════════
+   CURSOR (desktop only)
+═══════════════════════════════ */
+const curDot=document.getElementById('curDot'),curRing=document.getElementById('curRing');
+const isTouchDevice=()=>window.matchMedia('(pointer:coarse)').matches;
+document.addEventListener('mousemove',e=>{
+  if(isTouchDevice())return;
+  curDot.style.left=e.clientX+'px';curDot.style.top=e.clientY+'px';
+  curRing.style.left=e.clientX+'px';curRing.style.top=e.clientY+'px';
+},{passive:true});
+document.addEventListener('mouseover',e=>{
+  if(!e.target.closest('button,a,.s3-card,.s6-conn,.s6-spirit,.s7-job,.s7-chip,.s2-key,.s4-opt,.s5-tier-card'))return;
+  curRing.style.transform='translate(-50%,-50%) scale(1.8)';
+  curRing.style.borderColor='rgba(255,184,0,0.7)';
+},{passive:true});
+document.addEventListener('mouseout',e=>{
+  if(!e.target.closest('button,a,.s3-card,.s6-conn,.s6-spirit,.s7-job,.s7-chip,.s2-key,.s4-opt,.s5-tier-card'))return;
+  curRing.style.transform='translate(-50%,-50%) scale(1)';
+  curRing.style.borderColor='rgba(255,184,0,0.4)';
+},{passive:true});
+
+/* ═══════════════════════════════
+   NAVIGATION
+═══════════════════════════════ */
+let currentScreen='s1';
+function goTo(id){
+  if(id===currentScreen)return;
+  document.getElementById(currentScreen).classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  currentScreen=id;
+  onScreenEnter(id);
+}
+function onScreenEnter(id){
+  if(id==='s2')initS2();
+  if(id==='s3')initS3();
+  if(id==='s4')initS4();
+  if(id==='s5')initS5();
+  if(id==='s6')initS6();
+  if(id==='s7')s7BootSeq();
+  const bb=document.getElementById('bottleBar');
+  bb.classList.toggle('show',id!=='s1');
+  const nav=document.getElementById('topNav');
+  nav.classList.toggle('show',id==='s6'||id==='s7');
+  const navTabDash=document.getElementById('navTabDash');
+  const navTabJobs=document.getElementById('navTabJobs');
+  if(navTabDash)navTabDash.classList.toggle('active',id==='s6');
+  if(navTabJobs)navTabJobs.classList.toggle('active',id==='s7');
+}
+function setBottle(pct,label){
+  document.getElementById('bbFill').style.width=pct+'%';
+  document.getElementById('bbLabel').textContent=label;
+  document.getElementById('bbPct').textContent=pct+'%';
+}
+
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
+let toastTimer=null;
+function showToast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+/* ═══════════════════════════════
+   S1 — SPLASH
+═══════════════════════════════ */
+(function initS1(){
+  const lines=['> INITIALIZING JOBZ.BAR SYSTEM...','> LOADING SPIRITS EXCHANGE ENGINE...',
+    '> CONNECTING TO OPPORTUNITY DATABASE...','> DRUNK ALGORITHM ONLINE...',
+    '> ALL SYSTEMS NOMINAL · POUR YOURSELF IN'];
+  const c=document.getElementById('s1Boot');
+  lines.forEach((line,i)=>{
+    const el=document.createElement('div');el.className='s1-boot-line';el.textContent=line;c.appendChild(el);
+    setTimeout(()=>{
+      el.classList.add('show');
+      if(i===lines.length-1)setTimeout(()=>{
+        document.getElementById('s1EnterBtn').style.display='inline-block';
+      },500);
+    },i*340+300);
+  });
+  setInterval(()=>{
+    const op=document.getElementById('s1Opener');
+    if(op)op.style.transform=`rotate(${(Math.random()-0.5)*6}deg)`;
+  },3200);
+})();
+function s1OpenerFound(){
+  showToast('> OPENER FOUND · EARLY ACCESS UNLOCKED 🍺',2500);
+  document.getElementById('s1EnterBtn').style.display='inline-block';
+}
+
+/* ═══════════════════════════════
+   S2 — AUTH
+═══════════════════════════════ */
+let s2PhoneDigits=[],s2OtpDigits=[],s2MaxDigits=10;
+function initS2(){
+  setBottle(5,'> IDENTITY VERIFICATION');
+  s2PhoneDigits=[];s2OtpDigits=[];
+  buildDial();buildNumpad('s2Numpad',false);
+  document.getElementById('s2OtpPanel').classList.remove('show');
+}
+function buildDial(){
+  const dial=document.getElementById('s2Dial');dial.innerHTML='';
+  for(let i=0;i<s2MaxDigits;i++){
+    const d=document.createElement('div');d.className='s2-digit';d.id='sd'+i;d.textContent='_';
+    dial.appendChild(d);
+  }
+}
+function buildNumpad(id,forOtp){
+  const keys=['1','2','3','4','5','6','7','8','9','*','0','⌫'];
+  const subs=['','ABC','DEF','GHI','JKL','MNO','PQRS','TUV','WXYZ','','',''];
+  const np=document.getElementById(id);np.innerHTML='';
+  np.className='s2-numpad';
+  keys.forEach((k,i)=>{
+    const btn=document.createElement('button');
+    btn.className='s2-key'+(k==='⌫'?' s2-key-del':'');
+    btn.innerHTML=`<div class="s2-key-num">${k}</div>${subs[i]?`<div class="s2-key-sub">${subs[i]}</div>`:''}`;
+    btn.addEventListener('click',()=>{forOtp?s2OtpPress(k):s2PhonePress(k);});
+    np.appendChild(btn);
+  });
+}
+function s2PhonePress(k){
+  if(k==='⌫')s2PhoneDigits.pop();
+  else if(k!=='*'&&s2PhoneDigits.length<s2MaxDigits)s2PhoneDigits.push(k);
+  updateDial();
+  setBottle(5+Math.floor((s2PhoneDigits.length/s2MaxDigits)*25),'> ENTERING NUMBER');
+  document.getElementById('s2SendBtn').classList.toggle('ready',s2PhoneDigits.length===s2MaxDigits);
+}
+function updateDial(){
+  for(let i=0;i<s2MaxDigits;i++){
+    const d=document.getElementById('sd'+i);if(!d)continue;
+    d.textContent=s2PhoneDigits[i]||'_';
+    d.classList.toggle('filled',i<s2PhoneDigits.length);
+    d.classList.toggle('active',i===s2PhoneDigits.length);
+  }
+}
+function s2UpdateCountry(){
+  const sel=document.getElementById('s2Country');
+  SESSION.countryCode=sel.options[sel.selectedIndex].dataset.code;
+}
+function s2Send(){
+  if(s2PhoneDigits.length<8){showToast('> ENTER A VALID PHONE NUMBER',2000);return;}
+  SESSION.phone=s2PhoneDigits.join('');
+  document.getElementById('s2OtpPanel').classList.add('show');
+  buildOtpRow();buildNumpad('s2OtpNumpad',true);
+  setBottle(35,'> OTP SENT · ENTER CODE');
+  showToast('> CODE SENT TO '+SESSION.countryCode+' '+SESSION.phone.slice(0,3)+'***'+SESSION.phone.slice(-3),3000);
+}
+function buildOtpRow(){
+  const row=document.getElementById('s2OtpRow');row.innerHTML='';
+  for(let i=0;i<6;i++){
+    const d=document.createElement('div');d.className='s2-otp-digit';d.id='od'+i;d.textContent='_';
+    row.appendChild(d);
+  }
+}
+function s2OtpPress(k){
+  if(k==='⌫')s2OtpDigits.pop();
+  else if(k!=='*'&&s2OtpDigits.length<6)s2OtpDigits.push(k);
+  for(let i=0;i<6;i++){
+    const d=document.getElementById('od'+i);if(!d)continue;
+    d.textContent=s2OtpDigits[i]||'_';
+    d.classList.toggle('filled',i<s2OtpDigits.length);
+    if(i===s2OtpDigits.length-1)d.classList.add('glitch');else d.classList.remove('glitch');
+  }
+  setBottle(35+Math.floor((s2OtpDigits.length/6)*30),'> ENTERING OTP');
+}
+function s2Verify(){
+  if(s2OtpDigits.length<6){showToast('> ENTER THE FULL 6-DIGIT CODE',2000);return;}
+  setBottle(70,'> VERIFIED · ACCESSING MISSION BRIEF');
+  showToast('> VERIFIED · WELCOME TO JOBZ.BAR 🍺',2000);
+  setTimeout(()=>goTo('s3'),900);
+}
+
+/* ═══════════════════════════════
+   S3 — MISSION
+═══════════════════════════════ */
+const MISSIONS=[
+  {id:'socialize',title:'SOCIALIZE',desc:'Connect with the bar industry. Meet people who drink what you drink.',
+   icon:`<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="7" r="3" stroke="#FFB800" stroke-width="1.2"/><circle cx="14" cy="7" r="3" stroke="#FFB800" stroke-width="1.2"/><path d="M2 17C2 14 4 12 7 12C9 12 11 13 12 14" stroke="#B87333" stroke-width="1.2"/><path d="M10 14C11 13 13 12 14 12C17 12 18 14 18 17" stroke="#B87333" stroke-width="1.2"/></svg>`},
+  {id:'knowledge',title:'KNOWLEDGE',desc:'Discover spirits stories, distillery deep-dives, and the Spirits Exchange market.',
+   icon:`<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" stroke="#FFB800" stroke-width="1.2"/><line x1="6" y1="6" x2="14" y2="6" stroke="#B87333" stroke-width="0.8"/><line x1="6" y1="9" x2="14" y2="9" stroke="#B87333" stroke-width="0.8"/><line x1="6" y1="12" x2="10" y2="12" stroke="#B87333" stroke-width="0.8"/></svg>`},
+  {id:'events',title:'EVENTS',desc:'Get curated invites to tastings, rooftops, bar crawls via the drunk algorithm.',
+   icon:`<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="13" stroke="#FFB800" stroke-width="1.2"/><line x1="3" y1="8" x2="17" y2="8" stroke="#B87333" stroke-width="0.8"/><line x1="7" y1="2" x2="7" y2="6" stroke="#FFB800" stroke-width="1.5"/><line x1="13" y1="2" x2="13" y2="6" stroke="#FFB800" stroke-width="1.5"/></svg>`},
+  {id:'jobs',title:'JOBS',desc:'Find verified alcohol industry roles globally. From behind the bar to brand director.',
+   icon:`<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="13" stroke="#FFB800" stroke-width="1.2"/><rect x="7" y="2" width="6" height="4" stroke="#FFB800" stroke-width="1.2" fill="none"/><line x1="2" y1="10" x2="18" y2="10" stroke="#B87333" stroke-width="0.8"/></svg>`},
+];
+function initS3(){
+  setBottle(70,'> MISSION BRIEFING');
+  SESSION.missions=[];
+  const grid=document.getElementById('s3Grid');grid.innerHTML='';
+  MISSIONS.forEach(m=>{
+    const card=document.createElement('button');card.className='s3-card';
+    card.innerHTML=`<div class="s3-sel-dot"></div><div class="s3-card-icon">${m.icon}</div><div class="s3-card-title">${m.title}</div><div class="s3-card-desc">${m.desc}</div>`;
+    card.onclick=()=>{
+      card.classList.toggle('selected');
+      if(card.classList.contains('selected'))SESSION.missions.push(m.id);
+      else SESSION.missions=SESSION.missions.filter(x=>x!==m.id);
+      document.getElementById('s3ProgFill').style.width=(SESSION.missions.length/4*100)+'%';
+      const cb=document.getElementById('s3ConfirmBtn');
+      if(SESSION.missions.length>0){cb.classList.add('ready');cb.textContent='> CONFIRM '+SESSION.missions.length+' MISSION'+(SESSION.missions.length>1?'S':'')+' · CONTINUE';}
+      else{cb.classList.remove('ready');cb.textContent='> SELECT AT LEAST ONE MISSION';}
+      setBottle(70+SESSION.missions.length*2,'> MISSIONS: '+SESSION.missions.length+'/4');
+    };
+    grid.appendChild(card);
+  });
+}
+function s3Confirm(){
+  if(!SESSION.missions.length){showToast('> SELECT AT LEAST ONE MISSION',2000);return;}
+  setBottle(80,'> BUILDING YOUR PERSONA');
+  setTimeout(()=>goTo('s4'),400);
+}
+
+/* ═══════════════════════════════
+   S4 — PERSONA
+═══════════════════════════════ */
+const DRINKS=[
+  {label:'ABSINTHE / NICHE SPIRITS',archetype:'PHANTOM'},
+  {label:'CRAFT BEER',archetype:'HOPHEAD'},
+  {label:'COCKTAILS',archetype:'ALCHEMIST'},
+  {label:'GIN & TONIC',archetype:'BOTANIST'},
+  {label:'RUM / DARK & STORMY',archetype:'NAVIGATOR'},
+  {label:'SAKE / SOJU / RICE SPIRITS',archetype:'SENSEI'},
+  {label:'TEQUILA / MEZCAL',archetype:'DESPERADO'},
+  {label:'VODKA',archetype:'GHOST'},
+  {label:'WHISKY (JAPANESE/INDIAN)',archetype:'SAMURAI'},
+  {label:'WINE / CHAMPAGNE',archetype:'SOMMELIER'},
+];
+const Q_DEFS=[
+  {id:'drink',type:'drink',text:"WHAT'S YOUR DRINK?"},
+  {id:'whyDrink',type:'choice',text:'WHY THIS DRINK?',opts:['RITUAL','FLAVOUR','SOCIAL','STORY','ESCAPE']},
+  {id:'capacity',type:'choice',text:'YOUR CAPACITY?',opts:['ONE & DONE','2–3 CALIBRATED','HERE TILL CLOSE','DEPENDS ON VIBE']},
+  {id:'frequency',type:'choice',text:'HOW OFTEN?',opts:['DAILY','WEEKENDS','SOCIAL ONLY','RARE']},
+  {id:'barType',type:'choice',text:'YOUR IDEAL BAR?',opts:['SPEAKEASY','ROOFTOP','DIVE BAR','DISTILLERY TOUR','BEACH SHACK']},
+  {id:'destination',type:'choice',text:'DREAM SPIRITS DESTINATION?',opts:['GOA','SCOTLAND','TOKYO','IBIZA','MUMBAI','TUSCANY']},
+  {id:'personality',type:'choice',text:'YOUR BAR PERSONALITY?',opts:['CONNOISSEUR','CONNECTOR','STORYTELLER','WILDCARD']},
+  {id:'homebrew',type:'choice',text:'HOMEBREW / OWN A MICRO-OPERATION?',opts:['YES — I HOMEBREW','OWN A MICRO-BREWERY','CURIOUS / CONSIDERING','JUST A CONSUMER']},
+  {id:'gender',type:'choice',text:'YOUR GENDER?',opts:['MALE','FEMALE','NON-BINARY','PREFER NOT TO SAY']},
+  {id:'dob',type:'dob',text:'YOUR DATE OF BIRTH?'},
+  {id:'city',type:'text',text:'YOUR CITY?',ph:'TYPE YOUR CITY...'},
+  {id:'usernameSeed',type:'text',text:'A WORD FOR YOUR CODENAME?',ph:'E.G. PEAT, AGAVE, NOIR... (OPTIONAL)'},
+];
+let s4QIdx=0;
+function initS4(){
+  setBottle(80,'> BUILDING YOUR PERSONA');
+  s4QIdx=0;
+  const inner=document.getElementById('s4Inner');inner.innerHTML='';
+  Q_DEFS.forEach((q,i)=>{
+    const div=document.createElement('div');
+    div.className='s4-q'+(i===0?' active':'');div.id='s4q'+i;
+    div.innerHTML=buildQHTML(q,i);
+    inner.appendChild(div);
+  });
+}
+function buildQHTML(q,i){
+  const prog=Math.round(((i+1)/Q_DEFS.length)*100);
+  let body='';
+  // Inline dossier for mobile (shown from q3)
+  const dossierHTML=i>=2?`<div class="s4-dossier-inline" id="s4DI${i}"><div class="s4-dossier-lbl">// DOSSIER SO FAR</div><div id="s4DIItems${i}"></div></div>`:'';
+  if(q.type==='drink'){
+    const opts=DRINKS.map((d,di)=>`<button class="s4-opt" onclick="s4SelectDrink(${di},'${d.archetype}')"><span class="s4-opt-key">${String.fromCharCode(65+di)}</span>${d.label}<small style="margin-left:auto;font-size:0.65rem;color:rgba(255,184,0,0.28);">${d.archetype}</small></button>`).join('');
+    body=`<div class="s4-opts">${opts}<button class="s4-opt" onclick="s4SelectDrink('other','WILDCARD')"><span class="s4-opt-key">K</span>OTHERS — TYPE BELOW</button><input class="s4-text-inp" id="drinkOther" placeholder="YOUR DRINK..." style="display:none;margin-top:8px;"></div>`;
+  }else if(q.type==='choice'){
+    const opts=q.opts.map((o,oi)=>`<button class="s4-opt" onclick="s4Select(this,'${q.id}','${o}')"><span class="s4-opt-key">${String.fromCharCode(65+oi)}</span>${o}</button>`).join('');
+    body=`<div class="s4-opts">${opts}</div>`;
+  }else if(q.type==='text'){
+    body=`<input class="s4-text-inp" id="s4inp_${q.id}" placeholder="${q.ph||'TYPE HERE...'}" oninput="s4TextChange('${q.id}',${i})">`;
+  }else if(q.type==='dob'){
+    body=`<div class="s4-dob-row"><input class="s4-dob-part" id="dobD" maxlength="2" placeholder="DD" style="width:60px;" oninput="s4DobChange(${i})"><span class="s4-dob-sep">/</span><input class="s4-dob-part" id="dobM" maxlength="2" placeholder="MM" style="width:60px;" oninput="s4DobChange(${i})"><span class="s4-dob-sep">/</span><input class="s4-dob-part" id="dobY" maxlength="4" placeholder="YYYY" style="width:88px;" oninput="s4DobChange(${i})"></div>`;
+  }
+  const nextLbl=i===Q_DEFS.length-1?'> GENERATE CODENAME':'> NEXT';
+  return `<div class="s4-q-number">Q ${i+1} / ${Q_DEFS.length}</div>
+<div class="s4-q-prog"><div class="s4-q-prog-fill" style="width:${prog}%"></div></div>
+${dossierHTML}
+<div class="s4-q-text">${q.text}</div>
+${body}
+<button class="s4-next-btn" id="s4next${i}" onclick="s4Next(${i})">${nextLbl}</button>`;
+}
+function s4Select(btn,qid,val){
+  btn.closest('.s4-opts').querySelectorAll('.s4-opt').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  SESSION.persona[qid]=val;
+  document.getElementById('s4next'+s4QIdx).classList.add('ready');
+  updateDossier();
+}
+function s4SelectDrink(idx,arch){
+  SESSION.persona.drink=idx==='other'?'':DRINKS[idx].label;
+  SESSION.persona.archetype=arch;
+  const inp=document.getElementById('drinkOther');
+  if(inp){inp.style.display=idx==='other'?'block':'none';if(idx==='other')inp.focus();}
+  document.getElementById('s4q0').querySelectorAll('.s4-opt').forEach(b=>b.classList.remove('selected'));
+  const allOpts=document.querySelectorAll('#s4q0 .s4-opt');
+  const tgt=allOpts[idx==='other'?DRINKS.length:idx];
+  if(tgt)tgt.classList.add('selected');
+  document.getElementById('s4next0').classList.add('ready');
+  updateDossier();
+}
+function s4TextChange(qid,qIdx){
+  const inp=document.getElementById('s4inp_'+qid);
+  if(inp)SESSION.persona[qid]=inp.value.trim();
+  const optional=qid==='usernameSeed';
+  document.getElementById('s4next'+qIdx).classList.toggle('ready',(SESSION.persona[qid]||'').length>=2||optional);
+}
+function s4DobChange(qIdx){
+  const d=document.getElementById('dobD')?.value||'';
+  const m=document.getElementById('dobM')?.value||'';
+  const y=document.getElementById('dobY')?.value||'';
+  if(d.length===2&&m.length===2&&y.length===4){
+    const dob=new Date(+y,+m-1,+d);
+    const age=Math.floor((new Date()-dob)/(365.25*24*3600*1000));
+    SESSION.persona.dob=`${d}/${m}/${y}`;
+    if(age<21){
+      const el=new Date(dob);el.setFullYear(el.getFullYear()+21);
+      document.getElementById('s4EligibleDate').textContent='ELIGIBLE: '+el.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase();
+      document.getElementById('s4AgeBlock').classList.add('show');
+      return;
+    }
+    document.getElementById('s4next'+qIdx).classList.add('ready');
+    updateDossier();
+  }
+}
+function s4Next(i){
+  const btn=document.getElementById('s4next'+i);
+  if(!btn.classList.contains('ready')){
+    if(i===Q_DEFS.length-1){goToCodename();return;}
+    showToast('> MAKE A SELECTION TO CONTINUE',2000);return;
+  }
+  if(i===Q_DEFS.length-1){goToCodename();return;}
+  document.getElementById('s4q'+i).classList.remove('active');
+  s4QIdx=i+1;
+  document.getElementById('s4q'+s4QIdx).classList.add('active');
+  setBottle(80+Math.round((s4QIdx/Q_DEFS.length)*17),'> PERSONA Q'+(s4QIdx+1)+'/'+Q_DEFS.length);
+  updateDossier();
+  // Show inline dossier on mobile from Q3
+  if(s4QIdx>=2){
+    const di=document.getElementById('s4DI'+s4QIdx);
+    if(di)di.classList.add('show');
+  }
+  // Show desktop side dossier
+  if(s4QIdx>=2)document.getElementById('s4DossierSide').classList.add('show');
+}
+function updateDossier(){
+  const p=SESSION.persona;
+  const items=[];
+  if(p.drink)items.push({k:'DRINK',v:p.drink});
+  if(p.archetype)items.push({k:'ARCHETYPE',v:p.archetype});
+  if(p.whyDrink)items.push({k:'MOTIVE',v:p.whyDrink});
+  if(p.barType)items.push({k:'BAR',v:p.barType});
+  if(p.destination)items.push({k:'DEST.',v:p.destination});
+  if(p.city)items.push({k:'CITY',v:p.city});
+  const html=items.map(it=>`<div class="s4-dossier-item"><span style="color:rgba(255,184,0,0.2)">${it.k}:</span> ${it.v}</div>`).join('');
+  // Update side panel
+  const side=document.getElementById('s4DossierSideItems');
+  if(side){side.innerHTML=html;}
+  // Update all inline panels
+  Q_DEFS.forEach((_,qi)=>{
+    const el=document.getElementById('s4DIItems'+qi);
+    if(el)el.innerHTML=html;
+  });
+}
+function goToCodename(){
+  setBottle(97,'> GENERATING CODENAME');
+  showToast('> PERSONA LOCKED · BUILDING CODENAME...',2000);
+  setTimeout(()=>goTo('s5'),700);
+}
+
+/* ═══════════════════════════════
+   S5 — CODENAME + TIERS
+═══════════════════════════════ */
+function generateCodename(){
+  const p=SESSION.persona;
+  const arch=(p.archetype||'GHOST').toUpperCase();
+  const dest=(p.destination||'GLOBAL').toUpperCase().replace(/ /g,'');
+  const seed=(p.usernameSeed||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  const parts=[arch,dest];
+  if(seed)parts.push(seed);
+  return parts.join('_');
+}
+function initS5(){
+  setBottle(97,'> CODENAME GENERATION');
+  const code=generateCodename();
+  SESSION.codename=code;
+  document.getElementById('s5CodeDisplay').textContent=code;
+  document.getElementById('s5CodeEdit').value=code;
+  const p=SESSION.persona;
+  document.getElementById('s5DossierCard').innerHTML=[
+    ['DRINK',p.drink||p.archetype||'—'],['ARCHETYPE',p.archetype||'—'],
+    ['DESTINATION',p.destination||'—'],['BAR TYPE',p.barType||'—'],
+    ['CITY',p.city||'—'],['MISSIONS',SESSION.missions.join(' · ')||'—'],
+  ].map(([k,v])=>`<div class="s5-dossier-row"><span class="s5-dossier-key">${k}</span><span class="s5-dossier-val">${v}</span></div>`).join('');
+  buildTierCards();
+  document.getElementById('s5Phase1').classList.add('active');
+  document.getElementById('s5Phase2').classList.remove('active');
+}
+function s5SanitizeCode(){
+  const inp=document.getElementById('s5CodeEdit');
+  inp.value=inp.value.toUpperCase().replace(/[^A-Z0-9_]/g,'').slice(0,24);
+  SESSION.codename=inp.value;
+  document.getElementById('s5CodeDisplay').textContent=inp.value||'YOUR_CODENAME';
+}
+function s5LockIdentity(){
+  const code=document.getElementById('s5CodeEdit').value.trim();
+  if(!code){showToast('> ENTER YOUR CODENAME FIRST',2000);return;}
+  SESSION.codename=code;
+  showToast('> IDENTITY LOCKED: '+code+' 🔒',2500);
+  document.getElementById('s5Phase1').classList.remove('active');
+  document.getElementById('s5Phase2').classList.add('active');
+  setBottle(98,'> SELECT YOUR TIER');
+}
+const TIER_DATA=[
+  {p:'30',name:'THE LOCAL',freq:'PER MONTH',desc:'Same drink, same gender. Your corner of the bar.',vip:false},
+  {p:'60',name:'CROSS DRINK',freq:'PER MONTH',desc:'All drinks, same gender. The bar got bigger.',vip:false},
+  {p:'90',name:'WHOLE BAR',freq:'PER MONTH',desc:'Any drink, any gender. Gender colors appear on profiles.',vip:false},
+  {p:'1001',name:'VIP ACCESS',freq:'PER MONTH',desc:'Everything plus one curated invite every month.',vip:true},
+];
+function buildTierCards(){
+  const grid=document.getElementById('s5TiersGrid');grid.innerHTML='';
+  TIER_DATA.forEach(t=>{
+    const card=document.createElement('div');
+    card.className='s5-tier-card'+(t.vip?' vip-card':'');card.id='s5tier'+t.p;
+    card.innerHTML=`${t.vip?'<div class="s5-vip-badge">★ DON\'T MISS</div>':''}
+<div class="s5-tier-name">${t.name}</div>
+<div class="s5-tier-price"${t.vip?' style="color:var(--vip)"':''}>₹${t.p}</div>
+<div class="s5-tier-freq">${t.freq}</div>
+<div class="s5-tier-desc">${t.desc}</div>
+${t.vip?`<div class="s5-vip-highlight"><strong>🎲 1 FREE INVITE / MONTH</strong>The drunk algorithm drops your name on a curated get-together every month.</div>`:''}`;
+    card.onclick=()=>s5SelectTier(t.p,t.name);
+    grid.appendChild(card);
+  });
+}
+function s5SelectTier(price,name){
+  document.querySelectorAll('.s5-tier-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('s5tier'+price).classList.add('selected');
+  SESSION.tier=price;SESSION.tierName=name;SESSION.tierPrice=+price;
+  SESSION.genderColors=(+price>=90);
+  const btn=document.getElementById('s5ActivateBtn');
+  btn.classList.add('show');btn.textContent='> ACTIVATE ₹'+price+' · '+name+' · ENTER THE BAR';
+}
+function s5Activate(){
+  if(!SESSION.tier){showToast('> SELECT A TIER FIRST',2000);return;}
+  showToast('> ₹'+SESSION.tier+' ACTIVATED · ENTERING THE BAR 🍺',2500);
+  setBottle(100,'> BAR UNLOCKED · '+SESSION.tierName);
+  if(SESSION.tier==='1001')setTimeout(()=>showToast('🎲 VIP: FIRST DRUNK ALGORITHM INVITE DROPS THIS MONTH',3500),2000);
+  setTimeout(()=>goTo('s6'),1200);
+}
+
+/* ═══════════════════════════════
+   S6 — DASHBOARD
+═══════════════════════════════ */
+const CONNECTIONS=[
+  {name:'PEAT_MAESTRO',drink:'WHISKY',city:'DELHI',gender:'male'},
+  {name:'HIGHLAND_GHOST',drink:'WHISKY',city:'BANGALORE',gender:'female'},
+  {name:'OAKBARREL_PRO',drink:'WHISKY',city:'PUNE',gender:'male'},
+  {name:'MALT_NOMAD',drink:'WHISKY',city:'CHENNAI',gender:'other'},
+  {name:'SINGLECASK_V',drink:'WHISKY',city:'HYDERABAD',gender:'female'},
+  {name:'DRAM_ORACLE',drink:'WHISKY',city:'KOLKATA',gender:'male'},
+];
+const SPIRITS_DATA=[
+  {id:'jw',brand:"JOHNNIE WALKER",color:"#C8940A",price:4850,chg:+2.3,abv:"40%",country:"🇬🇧 SCOTLAND",story:"Born 1820 in Kilmarnock. The Striding Man walked every continent.",tags:["BLENDED","SCOTCH","SMOKY"]},
+  {id:'jack',brand:"JACK DANIEL'S",color:"#8B6914",price:3200,chg:-1.1,abv:"40%",country:"🇺🇸 TENNESSEE",story:"Charcoal mellowed since 1866. Not a bourbon. Filtered through sugar maple charcoal.",tags:["TENNESSEE","SMOOTH","VANILLA"]},
+  {id:'patron',brand:"PATRÓN",color:"#D4AF37",price:5500,chg:+3.8,abv:"40%",country:"🇲🇽 JALISCO",story:"Estate-grown Blue Weber agave, hand-harvested at 7 years.",tags:["TEQUILA","SILVER","AGAVE"]},
+  {id:'hendricks',brand:"HENDRICK'S",color:"#2E7D32",price:3900,chg:+1.5,abv:"41.4%",country:"🇬🇧 SCOTLAND",story:"Rose petals and cucumber. Two antiquated stills. The most peculiar gin imaginable.",tags:["GIN","FLORAL","UNUSUAL"]},
+  {id:'glenfiddich',brand:"GLENFIDDICH",color:"#B8860B",price:6200,chg:-0.7,abv:"40%",country:"🇬🇧 SPEYSIDE",story:"World's most awarded single malt. Family owned since 1887.",tags:["SINGLE MALT","FRUITY","ICONIC"]},
+  {id:'bombay',brand:"BOMBAY SAPPHIRE",color:"#1565C0",price:2800,chg:+2.1,abv:"47%",country:"🇬🇧 HAMPSHIRE",story:"10 botanicals. Vapour-infused in Carter-Head stills.",tags:["GIN","COMPLEX","FLORAL"]},
+  {id:'macallan',brand:"THE MACALLAN",color:"#8B0000",price:12500,chg:+5.2,abv:"43%",country:"🇬🇧 SPEYSIDE",story:"Sherry-seasoned casks from Jerez, Spain. The definitive luxury malt.",tags:["SINGLE MALT","SHERRY","LUXURY"]},
+  {id:'olmeca',brand:"OLMECA ALTOS",color:"#C17817",price:2600,chg:+0.9,abv:"38%",country:"🇲🇽 LOS ALTOS",story:"Made using the tahona wheel — a 2-tonne volcanic stone.",tags:["TEQUILA","HIGHLAND","TAHONA"]},
+];
+let spiritPrices={};
+let s6Inited=false,cheersTriggered=false;
+
+function initS6(){
+  if(s6Inited)return;
+  s6Inited=true;
+  document.getElementById('navBadge').textContent=(SESSION.tierName||'LOCAL')+' · ₹'+SESSION.tier;
+  setBottle(100,'COMMAND CENTER ACTIVE');
+  // Build feed HTML
+  const feedHtml=buildFeedHTML();
+  const spiritsHtml=buildSpiritsHTML();
+  const activityHtml=buildActivityHTML();
+  // Inject desktop
+  document.getElementById('s6-feed-d').innerHTML=feedHtml;
+  document.getElementById('s6-spirits-d').innerHTML=spiritsHtml;
+  // Inject mobile panels
+  document.getElementById('s6PanelFeed').innerHTML=feedHtml;
+  document.getElementById('s6PanelSpirits').innerHTML=spiritsHtml;
+  document.getElementById('s6PanelActivity').innerHTML=activityHtml;
+  // Init after inject
+  SPIRITS_DATA.forEach(s=>spiritPrices[s.id]=s.price);
+  animConnections();
+  animActivity();
+  buildTicker();
+  setInterval(simulatePrices,3200);
+  setInterval(()=>{
+    const el=document.getElementById('navOnlineCount');
+    if(el){const c=parseInt(el.textContent.replace(/,/g,''));el.textContent=(c+Math.floor((Math.random()-0.48)*3)).toLocaleString();}
+  },4000);
+  setInterval(()=>{
+    const op=document.getElementById('s6-opener');
+    if(op&&!cheersTriggered)op.style.transform=`rotate(${(Math.random()-0.5)*5}deg)`;
+  },3000);
+}
+function buildFeedHTML(){
+  const sc=SESSION.genderColors;
+  const connsHTML=CONNECTIONS.map((c,i)=>`
+<div class="s6-conn" style="opacity:0;transform:translateY(8px);transition:all 0.4s ease ${i*0.06}s;" id="conn${i}">
+  <div class="s6-gender-bar ${sc?c.gender:'other'}"></div>
+  <div class="s6-conn-name ${sc?c.gender:'default'}">${c.name}</div>
+  <div class="s6-conn-drink">${c.drink}</div>
+  <div class="s6-conn-city">${c.city}</div>
+</div>`).join('');
+  return `
+<div class="s6-welcome-prompt">&gt; ACCESS GRANTED · WELCOME BACK</div>
+<div class="s6-welcome-name">${SESSION.codename||'COMMAND CENTER'}</div>
+<div class="s6-welcome-sub">${SESSION.persona.drink||'WHISKY'} · ${SESSION.tierName||'THE LOCAL'} · ${SESSION.persona.city||'GLOBAL'} · ₹${SESSION.tier} ACTIVE</div>
+<div class="s6-stats">
+  <div class="s6-stat"><div class="s6-stat-val" id="s6StatConn">0</div><div class="s6-stat-key">CONNECTIONS</div></div>
+  <div class="s6-stat"><div class="s6-stat-val" id="s6StatCheers">0</div><div class="s6-stat-key">CHEERS SENT</div></div>
+  <div class="s6-stat"><div class="s6-stat-val">347</div><div class="s6-stat-key">JOBS LIVE</div></div>
+  <div class="s6-stat"><div class="s6-stat-val">1</div><div class="s6-stat-key">DAYS ACTIVE</div></div>
+</div>
+<div class="s6-gender-legend">
+  <div class="s6-legend-item"><div class="s6-legend-rect male"></div><span class="s6-legend-lbl male">MALE</span></div>
+  <div class="s6-legend-item"><div class="s6-legend-rect female"></div><span class="s6-legend-lbl female">FEMALE</span></div>
+  <div class="s6-legend-item"><div class="s6-legend-rect other"></div><span class="s6-legend-lbl other">OTHERS</span></div>
+  <span style="margin-left:auto;font-size:0.65rem;color:rgba(255,184,0,0.18);">VISIBLE AT ₹90+</span>
+</div>
+<div class="s6-section-hdr"><div class="s6-section-lbl">// YOUR DRINK TRIBE</div><div class="s6-section-act">VIEW ALL</div></div>
+<div class="s6-conn-grid">${connsHTML}</div>
+<div class="s6-upgrade-block">
+  <div class="s6-upgrade-lbl">// UPGRADE YOUR POUR</div>
+  <div class="s6-upgrade-copy">At <b style="color:var(--gold)">₹60</b> — cross-drink connections unlock.<br>At <b style="color:var(--gold)">₹90</b> — any gender. Colors reveal.<br>At <b style="color:var(--vip)">₹1001</b> — one curated invite every month.</div>
+  <button class="s6-upgrade-btn" onclick="openUpgradeModal()">&gt; SEE ALL TIERS &amp; UPGRADE</button>
+</div>`;
+}
+function buildSpiritsHTML(){
+  const rows=SPIRITS_DATA.map(s=>`
+<div class="s6-spirit" id="sp_${s.id}" onclick="toggleSpirit('${s.id}')">
+  <div class="s6-spirit-row">
+    <div class="s6-spirit-rect" style="background:${s.color};box-shadow:0 0 7px ${s.color}44;"></div>
+    <div class="s6-spirit-brand">${s.brand}</div>
+    <div class="s6-spirit-price" id="spr_${s.id}">₹${s.price}</div>
+    <div class="s6-spirit-chg ${s.chg>=0?'up':'down'}" id="sch_${s.id}">${s.chg>=0?'↑':'↓'}${Math.abs(s.chg)}%</div>
+  </div>
+  <div class="s6-spirit-expand">
+    <div class="s6-spirit-inner">
+      <div class="s6-spirit-country">${s.country} · ABV ${s.abv}</div>
+      <div class="s6-spirit-story">${s.story}</div>
+      <div class="s6-spirit-tags">${s.tags.map(t=>`<span class="s6-spirit-tag">${t}</span>`).join('')}</div>
+    </div>
+  </div>
+</div>`).join('');
+  return `<div class="s6-spirits-hdr"><div class="s6-spirits-title">// SPIRITS EXCHANGE</div><div class="s6-spirits-live">LIVE</div></div>${rows}`;
+}
+const ACTIVITY_LOG=[
+  {time:'2 MIN AGO',text:'HIGHLAND_GHOST sent you a CHEERS 🥃'},
+  {time:'14 MIN AGO',text:'PEAT_MAESTRO viewed your profile'},
+  {time:'1 HR AGO',text:'New whisky connection in Bangalore'},
+  {time:'2 HR AGO',text:'You sent a CHEERS to OAKBARREL_PRO'},
+  {time:'TODAY',text:'Account activated · Tier active'},
+];
+function buildActivityHTML(){
+  return `<div class="s6-section-hdr" style="margin-bottom:12px;"><div class="s6-section-lbl">// ACTIVITY LOG</div></div>`+
+  ACTIVITY_LOG.map((a,i)=>`<div class="s6-activity-item" style="opacity:0;transition:opacity 0.4s ease ${0.1+i*0.08}s;" id="act${i}"><span class="s6-act-time">${a.time}</span><span class="s6-act-text">${a.text}</span></div>`).join('');
+}
+function animConnections(){
+  CONNECTIONS.forEach((_,i)=>{
+    setTimeout(()=>{
+      document.querySelectorAll('#conn'+i).forEach(el=>{
+        el.style.opacity='1';el.style.transform='translateY(0)';
+      });
+    },100+i*60);
+  });
+  animStat('s6StatConn',0,CONNECTIONS.length,800);
+  animStat('s6StatCheers',0,SESSION.cheersCount,600);
+}
+function animActivity(){
+  ACTIVITY_LOG.forEach((_,i)=>{
+    setTimeout(()=>{
+      document.querySelectorAll('#act'+i).forEach(el=>el.style.opacity='1');
+    },200+i*80);
+  });
+}
+function animStat(id,from,to,dur){
+  document.querySelectorAll('#'+id).forEach(el=>{
+    let cur=from;
+    const step=(to-from)/(dur/50);
+    const iv=setInterval(()=>{cur+=step;if(cur>=to){cur=to;clearInterval(iv);}el.textContent=Math.floor(cur);},50);
+  });
+}
+function toggleSpirit(id){
+  const was=document.getElementById('sp_'+id)?.classList.contains('open');
+  document.querySelectorAll('.s6-spirit').forEach(x=>x.classList.remove('open'));
+  if(!was)document.querySelectorAll('#sp_'+id).forEach(x=>x.classList.add('open'));
+}
+function simulatePrices(){
+  SPIRITS_DATA.forEach(s=>{
+    const ch=(Math.random()-0.48)*80;
+    spiritPrices[s.id]=Math.max(100,Math.round(spiritPrices[s.id]+ch));
+    const up=ch>=0;
+    document.querySelectorAll('#spr_'+s.id).forEach(pe=>{pe.textContent='₹'+spiritPrices[s.id];pe.style.color=up?'var(--green)':'var(--red)';setTimeout(()=>pe.style.color='var(--gold)',600);});
+    const pct=((ch/s.price)*100).toFixed(1);
+    document.querySelectorAll('#sch_'+s.id).forEach(ae=>{ae.textContent=(up?'↑':'↓')+Math.abs(pct)+'%';ae.className='s6-spirit-chg '+(up?'up':'down');});
+  });
+}
+function buildTicker(){
+  const track=document.getElementById('s6TickerTrack');
+  [1,2].forEach(()=>SPIRITS_DATA.forEach(s=>{
+    const span=document.createElement('span');span.className='ticker-item';
+    span.innerHTML=`<span class="t-brand">${s.brand}</span><span class="t-price">₹${s.price}</span><span class="${s.chg>=0?'t-up':'t-down'}">${s.chg>=0?'▲':'▼'}${Math.abs(s.chg)}%</span><span style="color:rgba(255,184,0,0.1)">·</span>`;
+    track.appendChild(span);
+  }));
+}
+function s6MobileTab(btn,panelId){
+  document.querySelectorAll('.s6-mtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.s6-mobile-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+
+/* CHEERS / DRUNK */
+const DRUNK_PROFILES=[
+  {name:'PEAT_MAESTRO',drink:'WHISKY',city:'DELHI',score:97,gender:'male'},
+  {name:'HIGHLAND_GHOST',drink:'WHISKY',city:'BANGALORE',score:94,gender:'female'},
+  {name:'OAKBARREL_PRO',drink:'WHISKY',city:'PUNE',score:91,gender:'male'},
+  {name:'MALT_NOMAD',drink:'WHISKY',city:'CHENNAI',score:89,gender:'other'},
+  {name:'SINGLECASK_V',drink:'WHISKY',city:'HYDERABAD',score:87,gender:'female'},
+  {name:'DRAM_ORACLE',drink:'WHISKY',city:'KOLKATA',score:85,gender:'male'},
+  {name:'NEAT_RENEGADE',drink:'WHISKY',city:'GOA',score:83,gender:'female'},
+  {name:'CASK_PHANTOM',drink:'WHISKY',city:'MUMBAI',score:81,gender:'male'},
+  {name:'PEATY_REBEL',drink:'WHISKY',city:'JAIPUR',score:78,gender:'other'},
+  {name:'SMOKE_SIGNAL_K',drink:'WHISKY',city:'KOCHI',score:76,gender:'female'},
+];
+function triggerCheers(){
+  if(cheersTriggered)return;cheersTriggered=true;
+  document.getElementById('s6-opener').style.display='none';
+  document.getElementById('s6-opener-nudge').style.display='none';
+  showToast('> CHEERS ENGINE FIRING 🍺',2000);
+  const ov=document.getElementById('drunkOverlay');
+  ov.classList.add('active');
+  buildDrunkBoard();runDrunkAnim();
+}
+function buildDrunkBoard(){
+  const board=document.getElementById('drunkBoard'),sober=document.getElementById('soberFlash');
+  board.querySelectorAll('.dr-row').forEach(r=>r.remove());
+  DRUNK_PROFILES.forEach((p,i)=>{
+    const sc=SESSION.genderColors;
+    const nc=sc?(p.gender==='male'?'var(--male)':p.gender==='female'?'var(--female)':'var(--other)'):'var(--gold)';
+    const row=document.createElement('div');row.className='dr-row';row.id='dr'+i;
+    row.innerHTML=`<div class="dr-name" id="drn${i}" style="color:${nc}">${p.name}</div><div class="dr-bar-wrap"><div class="dr-bar-bg"></div><div class="dr-bar-fill" id="drb${i}" style="width:${p.score}%"></div><div class="dr-bar-lbl">${p.drink} · ${p.city}</div></div><div class="dr-price" id="drp${i}">${p.score}.00</div><div class="dr-chg up" id="drc${i}">+2.3%</div>`;
+    board.insertBefore(row,sober);
+  });
+}
+const DRUNK_PHASES=[
+  {delay:0,status:'SCANNING THE BAR',sub:'> LOCATING YOUR PEOPLE... PLEASE HOLD',tilt:'t1',blur:'bmild'},
+  {delay:800,status:'FINDING YOUR TRIBE',sub:'> TOLERANCE LEVELS NOMINAL... MOSTLY',tilt:'t2',blur:'bmild'},
+  {delay:1800,status:'NUMBERS ARE LYING',sub:'> THE ALGORITHM MIGHT HAVE HAD A FEW',tilt:'t1',blur:'bheavy'},
+  {delay:2800,status:'EVERYTHING IS FINE',sub:'> TRUST THE SYSTEM... MOSTLY',tilt:'t3',blur:'bheavy'},
+  {delay:3800,status:'OH NO',sub:'> RECALIBRATING... RECALIBRATING...',tilt:'t2',blur:'bheavy'},
+  {delay:4800,status:'SOBERING UP',sub:'> FILTERING MATCHES · ALMOST THERE',tilt:'tsober',blur:'bgone'},
+];
+let drunkIv=null;
+function runDrunkAnim(){
+  const term=document.getElementById('drunkTerminal');
+  DRUNK_PHASES.forEach(ph=>setTimeout(()=>{
+    document.getElementById('drunkStatus').textContent=ph.status;
+    document.getElementById('drunkSub').textContent=ph.sub;
+    term.className='';requestAnimationFrame(()=>{term.classList.add(ph.tilt,ph.blur);});
+  },ph.delay));
+  let tick=0;
+  drunkIv=setInterval(()=>{
+    tick++;const intensity=Math.min(tick/30,1);
+    DRUNK_PROFILES.forEach((p,i)=>{
+      const ne=document.getElementById('drn'+i),pe=document.getElementById('drp'+i);
+      const ce=document.getElementById('drc'+i),be=document.getElementById('drb'+i),re=document.getElementById('dr'+i);
+      if(!ne)return;
+      if(Math.random()<intensity*0.35){ne.classList.add('glitch');ne.textContent=scramble(p.name,intensity);setTimeout(()=>{ne.classList.remove('glitch');ne.textContent=p.name;},120);}
+      const ns=p.score+(Math.random()-0.48)*30*intensity;
+      pe.textContent=numScr(ns,intensity);pe.style.color=ns>p.score?'var(--green)':'var(--red)';setTimeout(()=>pe.style.color='var(--parch)',100);
+      be.style.width=Math.max(5,Math.min(100,ns+(Math.random()-0.5)*20*intensity))+'%';
+      const ch=(Math.random()-0.48)*12*intensity;
+      ce.textContent=(ch>=0?'+':'')+ch.toFixed(1)+'%';ce.className='dr-chg '+(ch>=0?'up':'down');
+      if(re){re.classList.toggle('fup',ch>=0);re.classList.toggle('fdown',ch<0);}
+    });
+    if(tick>18&&Math.random()<0.08)shuffleDrunkRows();
+  },100);
+  setTimeout(()=>{
+    clearInterval(drunkIv);
+    document.getElementById('soberFlash').classList.add('show');
+    DRUNK_PROFILES.forEach((p,i)=>{
+      const ne=document.getElementById('drn'+i);if(ne){ne.textContent=p.name;ne.classList.remove('glitch');}
+      const pe=document.getElementById('drp'+i);if(pe){pe.textContent=p.score+'.00';pe.style.color='var(--parch)';}
+      const be=document.getElementById('drb'+i);if(be)be.style.width=p.score+'%';
+    });
+  },5500);
+  setTimeout(showMatchGrid,7200);
+}
+function scramble(name,intensity){
+  const ch='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@$%';
+  return name.split('').map(c=>c==='_'?'_':Math.random()<intensity*0.55?ch[Math.floor(Math.random()*ch.length)]:c).join('');
+}
+function numScr(val,intensity){
+  if(intensity<0.3)return val.toFixed(2);
+  const d='0123456789';
+  return val.toFixed(2).split('').map(c=>c==='.'?'.':Math.random()<intensity*0.5?d[Math.floor(Math.random()*d.length)]:c).join('');
+}
+function shuffleDrunkRows(){
+  const board=document.getElementById('drunkBoard'),sober=document.getElementById('soberFlash');
+  const rows=Array.from(board.querySelectorAll('.dr-row'));
+  if(rows.length<2)return;
+  const a=Math.floor(Math.random()*rows.length),b=Math.floor(Math.random()*rows.length);
+  if(a!==b){const tmp=document.createElement('div');board.insertBefore(tmp,rows[a]);board.insertBefore(rows[a],rows[b]);board.insertBefore(rows[b],tmp);board.removeChild(tmp);board.appendChild(sober);}
+}
+function showMatchGrid(){
+  document.getElementById('drunkTerminal').style.display='none';
+  const mg=document.getElementById('matchGrid');
+  mg.classList.add('show');
+  const wrap=document.getElementById('mgWrap');wrap.innerHTML='';
+  DRUNK_PROFILES.forEach((p,i)=>{
+    const sc=SESSION.genderColors;
+    const nc=sc?(p.gender==='male'?'var(--male)':p.gender==='female'?'var(--female)':'var(--other)'):'var(--gold)';
+    const bg=sc?(p.gender==='male'?'var(--male)':p.gender==='female'?'var(--female)':'var(--other)'):'rgba(255,184,0,0.15)';
+    const card=document.createElement('div');card.className='mg-card';
+    card.innerHTML=`<div class="mg-gender-bar" style="background:${bg};"></div><div class="mg-name" style="color:${nc}">${p.name}</div><div class="mg-drink">${p.drink}</div><div class="mg-city">${p.city} · ${p.score}% MATCH</div><button class="mg-cheers-btn" onclick="sendCheers('${p.name}')">🥃 CHEERS</button>`;
+    wrap.appendChild(card);
+    setTimeout(()=>card.classList.add('show'),80+i*55);
+  });
+}
+function sendCheers(name){
+  SESSION.cheersCount++;
+  document.querySelectorAll('#s6StatCheers').forEach(el=>el.textContent=SESSION.cheersCount);
+  showToast('> CHEERS SENT TO '+name+' 🥃',2500);
+}
+function closeMatches(){
+  const ov=document.getElementById('drunkOverlay');
+  ov.style.opacity='0';ov.style.transition='opacity 0.5s';
+  setTimeout(()=>{
+    ov.style.display='none';ov.style.opacity='';ov.style.transition='';
+    ov.classList.remove('active');
+    document.getElementById('drunkTerminal').style.display='flex';
+    document.getElementById('matchGrid').classList.remove('show');
+    document.getElementById('soberFlash').classList.remove('show');
+    document.getElementById('drunkBoard').querySelectorAll('.dr-row').forEach(r=>r.remove());
+    cheersTriggered=false;
+    const op=document.getElementById('s6-opener');if(op){op.style.display='';op.style.opacity='0.45';}
+  },500);
+  showToast('> BACK TO COMMAND CENTER',2000);
+}
+/* UPGRADE MODAL */
+function openUpgradeModal(){document.getElementById('upgradeModal').classList.add('open');}
+function closeUpgradeModal(){document.getElementById('upgradeModal').classList.remove('open');}
+function doUpgrade(tier){
+  const names={'30':'THE LOCAL','60':'CROSS DRINK','90':'WHOLE BAR','1001':'VIP ACCESS'};
+  SESSION.tier=tier;SESSION.tierName=names[tier];SESSION.tierPrice=+tier;
+  SESSION.genderColors=(+tier>=90);
+  ['30','60','90','1001'].forEach(t=>{const b=document.getElementById('umBtn'+t);if(b)b.classList.toggle('active',t===tier);});
+  showToast('> ₹'+tier+' ACTIVATED · '+names[tier],3000);
+  setTimeout(()=>{
+    closeUpgradeModal();
+    document.getElementById('navBadge').textContent=names[tier]+' · ₹'+tier;
+    // Rebuild feed with new colors
+    const feedHtml=buildFeedHTML();
+    document.getElementById('s6-feed-d').innerHTML=feedHtml;
+    document.getElementById('s6PanelFeed').innerHTML=feedHtml;
+    animConnections();animActivity();
+    if(+tier>=90)setTimeout(()=>showToast('> GENDER COLORS UNLOCKED · BLUE=MALE · PINK=FEMALE',3500),500);
+    if(tier==='1001')setTimeout(()=>showToast('🎲 VIP ACTIVE · DRUNK ALGORITHM INVITE DROPS THIS MONTH',4000),1500);
+    setBottle(100,names[tier]+' · ₹'+tier+' ACTIVE');
+  },600);
+}
+
+/* ═══════════════════════════════
+   S7 — JOBS
+═══════════════════════════════ */
+const JOBS=[
+  {id:1,featured:true,vip:false,title:"HEAD BARTENDER",company:"THE QUILL · MUMBAI",type:"bartender",loc:"mumbai",mode:"fulltime",
+   badges:[['FULL TIME','b-type'],['MUMBAI','b-loc'],['5+ YRS','b-exp'],['★ FEATURED','b-new']],
+   desc:"Lead the bar team at one of Mumbai's most celebrated cocktail destinations. Craft seasonal menus, mentor staff.",
+   salary:"₹60K–80K / MONTH",posted:"2 HR AGO",applicants:14,
+   fullDesc:"The Quill is Mumbai's most awarded cocktail destination. You'll lead a team of 6 across two floors, collaborate on menu development, and represent the bar at industry events.",
+   reqs:["5+ years bartending in premium venues","WSET Level 2 or equivalent","Cocktail menu development experience","Team leadership skills","Whisky knowledge preferred"],
+   perks:["Staff drinks allowance","Education budget","Event access","Performance bonus"],
+   contact:{name:"PRIYA MEHTA",role:"F&B DIRECTOR · THE QUILL"}},
+  {id:2,featured:false,vip:false,title:"BRAND AMBASSADOR — SINGLE MALT",company:"HIGHLAND RESERVE · DELHI",type:"brand",loc:"delhi",mode:"fulltime",
+   badges:[['FULL TIME','b-type'],['DELHI','b-loc'],['3+ YRS','b-exp'],['NEW','b-new']],
+   desc:"Represent a premium Scottish single malt across North India. Build trade relationships, conduct masterclasses.",
+   salary:"₹50K–70K + EXPENSES",posted:"5 HR AGO",applicants:8,
+   fullDesc:"Highland Reserve is launching across India's most competitive whisky market. You'll own 50+ key accounts and deliver monthly masterclasses.",
+   reqs:["3+ years spirits industry","Deep single malt knowledge","Delhi trade relationships","Public speaking skills","40% travel"],
+   perks:["Car allowance","Travel budget","Product allocation","Quarterly bonus"],
+   contact:{name:"RAHUL SINGH",role:"NATIONAL SALES MANAGER"}},
+  {id:3,featured:false,vip:false,title:"MIXOLOGIST",company:"NEON GARDEN ROOFTOP · BANGALORE",type:"mixologist",loc:"bangalore",mode:"fulltime",
+   badges:[['FULL TIME','b-type'],['BANGALORE','b-loc'],['2+ YRS','b-exp']],
+   desc:"Join Bangalore's most Instagrammed rooftop. Speed, style, and originality across high-volume service.",
+   salary:"₹35K–48K / MONTH",posted:"12 HR AGO",applicants:22,
+   fullDesc:"Neon Garden is Bangalore's most-photographed rooftop. You'll create viral-worthy serves and handle 300+ covers on weekends.",
+   reqs:["2+ years cocktail bar experience","Strong presentation skills","High-volume service ability","Current cocktail knowledge"],
+   perks:["Uniform allowance","Weekly tastings","Staff meals","Referral bonus"],
+   contact:{name:"ANANYA KUMAR",role:"OPERATIONS MANAGER"}},
+  {id:4,featured:false,vip:false,title:"SOMMELIER",company:"TERROIR WINE BAR · GOA",type:"sommelier",loc:"goa",mode:"fulltime",
+   badges:[['FULL TIME','b-type'],['GOA','b-loc'],['WSET L3','b-exp']],
+   desc:"Curate a 400-label wine list at Goa's most sophisticated wine destination. Full cellar management.",
+   salary:"₹45K–58K / MONTH",posted:"1 DAY AGO",applicants:6,
+   fullDesc:"Terroir is Goa's only dedicated natural wine bar. You'll manage buying, cellar rotation, staff education, and guest pairing consultations.",
+   reqs:["WSET Level 3 minimum","2+ years sommelier experience","Old and New World wine knowledge","Cellar management experience"],
+   perks:["Education grant","Supplier trip access","Housing support","Season bonus"],
+   contact:{name:"MARCO ROSSINI",role:"WINE DIRECTOR · TERROIR"}},
+  {id:5,featured:false,vip:false,title:"BAR MANAGER",company:"VELVET UNDERGROUND · DUBAI",type:"manager",loc:"dubai",mode:"fulltime",
+   badges:[['FULL TIME','b-type'],['DUBAI','b-loc'],['TAX-FREE','b-exp'],['URGENT','b-urg']],
+   desc:"Immediate opening. Full P&L ownership at a fast-growing Dubai cocktail venue. Visa and accommodation included.",
+   salary:"AED 8K–12K / MONTH TAX-FREE",posted:"3 HR AGO",applicants:31,
+   fullDesc:"Velvet Underground is Dubai's fastest-growing cocktail venue group. Own operations, P&L, stock, and training.",
+   reqs:["4+ years bar management","P&L and inventory management","CMS or WSET preferred","Multicultural team experience"],
+   perks:["Tax-free salary","Visa & work permit","Accommodation allowance","Medical insurance"],
+   contact:{name:"JAMES POWELL",role:"GM · VELVET UNDERGROUND"}},
+  {id:6,featured:false,vip:false,title:"CRAFT BEER EDUCATOR",company:"HOP REPUBLIC · BANGALORE",type:"educator",loc:"bangalore",mode:"parttime",
+   badges:[['PART TIME','b-type'],['BANGALORE','b-loc'],['WEEKENDS','b-exp']],
+   desc:"Lead weekend craft beer masterclasses for enthusiasts and trade professionals.",
+   salary:"₹1,500 / SESSION + TIPS",posted:"2 DAYS AGO",applicants:9,
+   fullDesc:"Hop Republic runs weekend masterclasses for everyone from newcomers to trade professionals.",
+   reqs:["Certified Cicerone or equivalent","Deep beer styles knowledge","Engaging public speaking","Weekend availability"],
+   perks:["Flexible hours","Product samples","Growth potential"],
+   contact:{name:"ARJUN NAIR",role:"FOUNDER · HOP REPUBLIC"}},
+  {id:7,featured:false,vip:true,title:"SPIRITS CONSULTANT — LUXURY HOTEL GROUP",company:"[CONFIDENTIAL] · SINGAPORE",type:"brand",loc:"singapore",mode:"contract",
+   badges:[['CONTRACT','b-type'],['SINGAPORE','b-loc'],['SENIOR ONLY','b-exp'],['VIP ROLE','b-vip']],
+   desc:"Confidential senior consulting engagement for a luxury 5-star hotel group across Southeast Asia. VIP members only.",
+   salary:"SGD 8K–12K / MONTH",posted:"TODAY",applicants:3,
+   fullDesc:"VIP access required to view full details. Upgrade to ₹1001 to unlock this listing.",
+   reqs:["10+ years spirits experience","SEA market knowledge","Luxury consulting background"],
+   perks:["Luxury accommodation","Business class travel","Daily allowance"],
+   contact:{name:"[VIP ACCESS ONLY]",role:"UPGRADE TO VIEW"}},
+  {id:8,featured:false,vip:false,title:"DISTILLERY TOUR HOST",company:"GOA COASTAL SPIRITS · GOA",type:"distillery",loc:"goa",mode:"parttime",
+   badges:[['PART TIME','b-type'],['GOA','b-loc'],['TOURISM','b-exp']],
+   desc:"Lead immersive tours through a craft distillery making Indian single malt and tropical gins.",
+   salary:"₹22K–28K / MONTH",posted:"3 DAYS AGO",applicants:12,
+   fullDesc:"Goa Coastal Spirits welcomes 200 visitors per weekend. Deliver 2–3 tours per day and run tasting workshops.",
+   reqs:["Strong hosting and public speaking","Distillation process knowledge","Hindi and English fluency","Weekend availability"],
+   perks:["Product allocation","Tourism connections","Seasonal bonus"],
+   contact:{name:"LINDA D'SOUZA",role:"HEAD OF VISITOR EXPERIENCE"}},
+];
+
+let s7ActiveFilters={type:'all',loc:'all',mode:'all'};
+let s7ApplyTarget=null;
+let s7ActiveJobId=null;
+
+function s7GoTo(){goTo('s7');}
+
+const FILTERS_HTML=`
+<div class="s7-filter-title">// FILTER ROLES</div>
+<input type="text" class="s7-search" id="s7Search" placeholder="> SEARCH ROLES..." oninput="s7Filter()">
+<div class="s7-filter-group">
+  <div class="s7-filter-lbl">ROLE TYPE</div>
+  <button class="s7-chip active" data-fg="type" data-fv="all" onclick="s7Chip(this)">ALL ROLES <span class="s7-chip-count">347</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="bartender" onclick="s7Chip(this)">BARTENDER <span class="s7-chip-count">89</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="mixologist" onclick="s7Chip(this)">MIXOLOGIST <span class="s7-chip-count">54</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="sommelier" onclick="s7Chip(this)">SOMMELIER <span class="s7-chip-count">31</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="manager" onclick="s7Chip(this)">BAR MANAGER <span class="s7-chip-count">47</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="brand" onclick="s7Chip(this)">BRAND AMBASSADOR <span class="s7-chip-count">38</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="educator" onclick="s7Chip(this)">TRAINER / EDUCATOR <span class="s7-chip-count">18</span></button>
+  <button class="s7-chip" data-fg="type" data-fv="distillery" onclick="s7Chip(this)">DISTILLERY / BREWERY <span class="s7-chip-count">22</span></button>
+</div>
+<div class="s7-filter-group">
+  <div class="s7-filter-lbl">LOCATION</div>
+  <button class="s7-chip active" data-fg="loc" data-fv="all" onclick="s7Chip(this)">GLOBAL <span class="s7-chip-count">347</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="mumbai" onclick="s7Chip(this)">MUMBAI <span class="s7-chip-count">62</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="delhi" onclick="s7Chip(this)">DELHI / NCR <span class="s7-chip-count">48</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="bangalore" onclick="s7Chip(this)">BANGALORE <span class="s7-chip-count">41</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="goa" onclick="s7Chip(this)">GOA <span class="s7-chip-count">29</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="dubai" onclick="s7Chip(this)">DUBAI <span class="s7-chip-count">44</span></button>
+  <button class="s7-chip" data-fg="loc" data-fv="singapore" onclick="s7Chip(this)">SINGAPORE <span class="s7-chip-count">27</span></button>
+</div>
+<div class="s7-filter-group">
+  <div class="s7-filter-lbl">JOB TYPE</div>
+  <button class="s7-chip active" data-fg="mode" data-fv="all" onclick="s7Chip(this)">ALL <span class="s7-chip-count">347</span></button>
+  <button class="s7-chip" data-fg="mode" data-fv="fulltime" onclick="s7Chip(this)">FULL TIME <span class="s7-chip-count">198</span></button>
+  <button class="s7-chip" data-fg="mode" data-fv="parttime" onclick="s7Chip(this)">PART TIME <span class="s7-chip-count">91</span></button>
+  <button class="s7-chip" data-fg="mode" data-fv="contract" onclick="s7Chip(this)">CONTRACT <span class="s7-chip-count">58</span></button>
+</div>
+<button class="s7-clear-btn" onclick="s7ClearFilters()">&gt; CLEAR ALL FILTERS</button>`;
+
+function s7BootSeq(){
+  const boot=document.getElementById('s7-boot');
+  const main=document.getElementById('s7-main');
+  boot.style.display='flex';boot.style.flexDirection='column';
+  boot.classList.remove('done');
+  main.style.opacity='0';main.classList.remove('show');
+  ['s7bl0','s7bl1','s7bl2','s7bl3','s7bl4'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(el)el.classList.remove('show');
+    setTimeout(()=>{if(document.getElementById(id))document.getElementById(id).classList.add('show');},i*380+200);
+  });
+  setTimeout(()=>{
+    boot.classList.add('done');
+    main.classList.add('show');
+    s7Build();
+  },5*380+500);
+}
+
+function s7Build(){
+  // Inject filters into both desktop and mobile
+  document.getElementById('s7-filters-d').innerHTML=FILTERS_HTML;
+  document.getElementById('s7MFilters').innerHTML=FILTERS_HTML;
+  s7RenderJobs(null,'s7-feed-d');
+  s7RenderJobs(null,'s7MFeed');
+  s7RenderDetail(null,'s7-detail-d');
+  s7RenderDetail(null,'s7MDetail');
+}
+
+function s7RenderJobs(filtered,containerId){
+  const jobs=filtered||JOBS;
+  const el=document.getElementById(containerId);if(!el)return;
+  const meta=jobs.length+' ROLES LIVE · GLOBAL';
+  el.innerHTML=`
+<div class="s7-feed-hdr">
+  <div><div class="s7-feed-title">OPPORTUNITIES</div><div class="s7-feed-meta">${meta}</div></div>
+  <div class="s7-actions">
+    <button class="s7-sort-btn active" onclick="s7SetSort(this,'${containerId}')">LATEST</button>
+    <button class="s7-sort-btn" onclick="s7SetSort(this,'${containerId}')">SALARY</button>
+    <button class="s7-post-btn" onclick="openPostModal()">&gt; POST A JOB</button>
+  </div>
+</div>
+${jobs.map((j,i)=>buildJobCard(j,i,containerId)).join('')}`;
+  setTimeout(()=>el.querySelectorAll('.s7-job').forEach((c,i)=>setTimeout(()=>c.classList.add('show'),i*50)),50);
+}
+function buildJobCard(j,i,feedId){
+  const badgeHtml=j.badges.map(([l,c])=>`<span class="badge ${c}">${l}</span>`).join('');
+  return `<div class="s7-job${j.featured?' featured':''}${j.vip?' vip-locked':''}" id="${feedId}_j${j.id}" onclick="s7SelectJob(${j.id},'${feedId}')">
+  ${j.vip?'<div class="s7-vip-lock">VIP ONLY ▮</div>':''}
+  <div class="s7-job-top">
+    <div class="s7-job-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="13" stroke="#FFB800" stroke-width="1.2"/><rect x="7" y="2" width="6" height="4" stroke="#FFB800" stroke-width="1.2" fill="none"/><line x1="2" y1="10" x2="18" y2="10" stroke="#B87333" stroke-width="0.8"/></svg></div>
+    <div><div class="s7-job-title">${j.title}</div><div class="s7-job-company">${j.company}</div></div>
+  </div>
+  <div class="s7-badges">${badgeHtml}</div>
+  <div class="s7-job-desc">${j.desc}</div>
+  <div class="s7-job-footer">
+    <div class="s7-job-meta">
+      <span class="s7-meta-item">POSTED <span>${j.posted}</span></span>
+      <span class="s7-meta-item">APPLICANTS <span id="${feedId}_app${j.id}">${j.applicants}</span></span>
+    </div>
+    <button class="s7-apply-btn" onclick="event.stopPropagation();s7OpenApply(${j.id})">${j.vip?'▮ VIP':'▮ APPLY'}</button>
+  </div>
+</div>`;
+}
+
+function s7SelectJob(id,feedId){
+  // Highlight in feed
+  const feed=document.getElementById(feedId);
+  if(feed)feed.querySelectorAll('.s7-job').forEach(c=>c.classList.remove('active-job'));
+  const card=document.getElementById(feedId+'_j'+id);
+  if(card)card.classList.add('active-job');
+  s7ActiveJobId=id;
+  // Determine which detail panel to update
+  const detailId=feedId==='s7-feed-d'?'s7-detail-d':'s7MDetail';
+  s7RenderDetail(id,detailId);
+  // On mobile, switch to detail tab
+  if(feedId==='s7MFeed'){
+    const dtab=document.querySelectorAll('.s7-mtab')[2];
+    if(dtab)s7MobileTab(dtab,'s7MDetail');
+  }
+}
+
+function s7RenderDetail(id,containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  if(!id){
+    el.innerHTML=`<div class="s7-detail-empty"><div class="s7-d-empty-icon"><svg width="20" height="20" viewBox="0 0 22 22" fill="none"><rect x="2" y="3" width="18" height="16" stroke="rgba(255,184,0,0.4)" stroke-width="1.2"/><line x1="5" y1="8" x2="17" y2="8" stroke="rgba(255,184,0,0.2)" stroke-width="1"/><line x1="5" y1="12" x2="13" y2="12" stroke="rgba(255,184,0,0.15)" stroke-width="1"/></svg></div><div class="s7-d-empty-txt">SELECT A ROLE<br>TO VIEW DETAILS</div></div>`;
+    return;
+  }
+  const j=JOBS.find(x=>x.id===id);if(!j)return;
+  const badgeHtml=j.badges.map(([l,c])=>`<span class="badge ${c}">${l}</span>`).join('');
+  el.innerHTML=`
+<div class="s7-badges" style="margin-bottom:8px;">${badgeHtml}</div>
+<div class="s7-d-title">${j.title}</div>
+<div class="s7-d-company">${j.company}</div>
+<div class="s7-d-salary">SALARY <span>${j.salary}</span></div>
+<div class="s7-d-section"><div class="s7-d-lbl">ABOUT THE ROLE</div><div class="s7-d-body">${j.fullDesc}</div></div>
+<div class="s7-d-section"><div class="s7-d-lbl">REQUIREMENTS</div>${j.reqs.map(r=>`<div class="s7-d-req">${r}</div>`).join('')}</div>
+<div class="s7-d-section"><div class="s7-d-lbl">PERKS &amp; BENEFITS</div><div class="s7-d-perks">${j.perks.map(p=>`<span class="s7-d-perk">${p}</span>`).join('')}</div></div>
+<div class="s7-d-contact"><div class="s7-d-contact-lbl">HIRING CONTACT</div><div class="s7-d-contact-name">${j.contact.name}</div><div class="s7-d-contact-role">${j.contact.role}</div></div>
+<button class="s7-d-apply-btn" onclick="s7OpenApply(${j.id})">&gt; APPLY FOR THIS ROLE</button>
+<button class="s7-d-save-btn" onclick="showToast('> SAVED TO YOUR LIST ▮',2000)">&gt; SAVE FOR LATER</button>`;
+}
+
+function s7Chip(btn){
+  const fg=btn.dataset.fg,fv=btn.dataset.fv;
+  // Update both desktop and mobile filter panels
+  document.querySelectorAll(`[data-fg="${fg}"]`).forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll(`[data-fg="${fg}"][data-fv="${fv}"]`).forEach(b=>b.classList.add('active'));
+  s7ActiveFilters[fg]=fv;
+  s7Filter();
+}
+function s7Filter(){
+  const searchEls=document.querySelectorAll('.s7-search');
+  const search=searchEls.length?searchEls[0].value.toLowerCase():'';
+  const f=s7ActiveFilters;
+  const filtered=JOBS.filter(j=>{
+    const mt=f.type==='all'||j.type===f.type;
+    const ml=f.loc==='all'||j.loc===f.loc;
+    const mm=f.mode==='all'||j.mode===f.mode;
+    const ms=!search||j.title.toLowerCase().includes(search)||j.company.toLowerCase().includes(search)||j.desc.toLowerCase().includes(search);
+    return mt&&ml&&mm&&ms;
+  });
+  s7RenderJobs(filtered,'s7-feed-d');
+  s7RenderJobs(filtered,'s7MFeed');
+  const mc=document.getElementById('s7MCount');if(mc)mc.textContent=filtered.length;
+}
+function s7ClearFilters(){
+  s7ActiveFilters={type:'all',loc:'all',mode:'all'};
+  document.querySelectorAll('.s7-search').forEach(el=>el.value='');
+  document.querySelectorAll('.s7-chip').forEach(b=>{b.classList.remove('active');if(b.dataset.fv==='all')b.classList.add('active');});
+  s7RenderJobs(null,'s7-feed-d');s7RenderJobs(null,'s7MFeed');
+  showToast('> FILTERS CLEARED · ALL 347 ROLES',2000);
+}
+function s7SetSort(btn,feedId){
+  const feed=document.getElementById(feedId);
+  if(feed)feed.querySelectorAll('.s7-sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('> SORTED BY: '+btn.textContent,1800);
+}
+function s7OpenApply(id){
+  const j=JOBS.find(x=>x.id===id);if(!j)return;
+  if(j.vip){showToast('> VIP TIER REQUIRED · UPGRADE TO ₹1001',3000);return;}
+  s7ApplyTarget=id;
+  document.getElementById('applyJobName').textContent=j.title;
+  document.getElementById('applyCompany').textContent=j.company;
+  document.getElementById('applyModal').classList.add('open');
+}
+function confirmApply(){
+  const j=JOBS.find(x=>x.id===s7ApplyTarget);
+  document.getElementById('applyModal').classList.remove('open');
+  if(j){
+    j.applicants++;
+    document.querySelectorAll(`[id$="_app${j.id}"]`).forEach(el=>el.textContent=j.applicants);
+    showToast('> APPLICATION SENT · '+j.title,3000);
+  }
+}
+function s7MobileTab(btn,panelId){
+  document.querySelectorAll('.s7-mtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.s7-mobile-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+}
+function openPostModal(){document.getElementById('postModal').classList.add('open');}
+function closePostModal(){document.getElementById('postModal').classList.remove('open');}
+function submitPost(){
+  const t=document.getElementById('fTitle').value.trim();
+  const c=document.getElementById('fCompany').value.trim();
+  if(!t||!c){showToast('> FILL IN ROLE TITLE AND ESTABLISHMENT',2500);return;}
+  closePostModal();
+  showToast('> JOB POSTED · LIVE WITHIN 2 HOURS · ₹999 CHARGED',3500);
+}
+</script>
+</body>
+</html>
